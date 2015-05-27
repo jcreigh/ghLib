@@ -4,12 +4,13 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
-#include "Runnable.h"
+#include "ghLib/Runnable.h"
 
 namespace ghLib {
 
 bool Runnable::Start() {
 	task = std::async(std::launch::async, &Runnable::Task, this);
+	return true;
 }
 
 bool Runnable::Running() {

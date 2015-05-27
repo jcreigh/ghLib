@@ -4,7 +4,7 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
-#include "Util.h"
+#include "ghLib/Util.h"
 
 namespace ghLib {
 

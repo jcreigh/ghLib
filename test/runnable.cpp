@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <atomic>
-#include "Runnable.h"
+#include "ghLib/Runnable.h"
 #include "gtest/gtest.h"
 
 class RunnableTest : public ghLib::Runnable {

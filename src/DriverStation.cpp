@@ -4,22 +4,14 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
-#include <thread>
-#include <chrono>
-#include <functional>
-#include <future>
+#include "ghLib/DriverStation.h"
 
+#ifndef ROBOT
 namespace ghLib {
 
-class Runnable {
-	public:
-		bool Start();
-		bool Running();
-		virtual ~Runnable() {};
-
-	private:
-		virtual void Task() = 0;
-		std::future<void> task;
-};
+void DriverStation::ReportError(std::string error) {
+	printf("%s", error.c_str());
+}
 
 }
+#endif
