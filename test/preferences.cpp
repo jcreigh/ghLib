@@ -9,6 +9,22 @@
 #include <chrono>
 #include <thread>
 
+TEST(Preferences, IsKeyAcceptable) {
+	ASSERT_TRUE(ghLib::Preferences::IsKeyAcceptable("foo.bar"));
+	ASSERT_TRUE(ghLib::Preferences::IsKeyAcceptable("foobar"));
+	ASSERT_TRUE(ghLib::Preferences::IsKeyAcceptable("foo/bar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foo[bar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foo]bar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foo=bar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foo bar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foo\rbar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foo\nbar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foo\tbar"));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable("foobar "));
+	ASSERT_FALSE(ghLib::Preferences::IsKeyAcceptable(" foobar"));
+
+}
+
 TEST(Preferences, ContainsKey_No) {
 	auto pref = ghLib::Preferences::GetInstance();
 	ASSERT_FALSE(pref->ContainsKey("test.ContainsKey"));
@@ -23,9 +39,9 @@ TEST(Preferences, ContainsKey_Yes) {
 
 TEST(Preferences, Int) {
 	auto pref = ghLib::Preferences::GetInstance();
-	ASSERT_EQ(pref->GetInt("Moo", 5), 5);
-	pref->PutInt("Moo", 10);
-	ASSERT_EQ(pref->GetInt("Moo"), 10);
+	//ASSERT_EQ(pref->GetInt("test.Moo", 5), 5);
+	pref->PutInt("test.Moo", 10);
+	ASSERT_EQ(pref->GetInt("test.Moo"), 10);
 }
 
 

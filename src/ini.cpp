@@ -378,9 +378,10 @@ std::string ghLib::INI::File::save() {
 					lastEntry = (size_t)(i + 1);
 				}
 			}
-			if (section != "" && key.find(section + ".") == std::string::npos) {
+			if (section != "" && key.find(section + ".") == std::string::npos || (section == "" && key.find(".") != std::string::npos)) {
 				// TODO: Detect which line endings to use
-				lines.insert(lines.begin() + (int)lastEntry, ghLib::INI::Line("[" + key.substr(0, key.find(".")) + "]\n"));
+				section = key.substr(0, key.find("."));
+				lines.insert(lines.begin() + (int)lastEntry, ghLib::INI::Line("[" + section + "]\n"));
 				lastEntry++;
 			}
 			auto dotPos = key.find(".");

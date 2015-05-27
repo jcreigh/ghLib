@@ -4,6 +4,7 @@
 #include "networktables2/server/NetworkTableServer.h"
 
 #include <gtest/gtest.h>
+#include "ghLib/Preferences.h"
 
 NetworkTableServer* server;
 ITable* testTable;
@@ -30,6 +31,8 @@ int main(int argc, char **argv) {
 
 	sleep(1);
 	printf("Shutting down\n");
+	auto pref = ghLib::Preferences::GetInstance();
+	pref->Save();
 
 	//testTable->RemoveTableListener(listener);
 	NetworkTable::Shutdown();

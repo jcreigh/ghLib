@@ -4,29 +4,21 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
+#include "networktables2/server/NetworkTableServer.h"
 #include "ghLib/DriverStation.h"
 #include "ghLib/Preferences.h"
 
-#ifndef ROBOT
-
-#include "networktables2/server/NetworkTableServer.h"
-
 namespace ghLib {
 
-Preferences *Preferences::instance = nullptr;
-ITable* Preferences::prefTable;
+#ifndef GHLIB_PREF_FILENAME
+#define GHLIB_PREF_FILENAME "/home/lvuser/preferences.ini"
+#endif
 
-Preferences::Preferences() {
-	prefTable = NetworkTable::GetTable("Preferences");
-	//class ServerListener : public ITableListener {
-		//virtual void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew){
-			//fprintf(stdout, "Got key in Preferences: %s = %f\n", key.c_str(), value.f);
-			//fflush(stdout);
-		//};
-	//};
-	//auto listener = new ServerListener();
-	//prefTable->AddTableListener(listener, true);
-}
+static const char *kTableName = "Preferences";
+static const char *kSaveField = "~S A V E~";
+static const char *kFileName = GHLIB_PREF_FILENAME;
+
+Preferences *Preferences::instance = nullptr;
 
 Preferences *Preferences::GetInstance() {
 	if (instance == nullptr) {
@@ -35,58 +27,122 @@ Preferences *Preferences::GetInstance() {
 	return instance;
 }
 
-void Preferences::Put(const char *key, std::string value) {
-	prefTable->PutString(key, value);
-}
-
-std::string Preferences::GetString(const char *key, const char *defaultValue /* = "" */) {
-	return prefTable->GetString(key, defaultValue);
-}
-
-void Preferences::PutString(const char *key, const char *value) {
-	Put(key, value);
-}
-
-int Preferences::GetInt(const char *key, int defaultValue /* = 0 */) {
-	if (!ContainsKey(key)) {
-		return defaultValue; // Prevent possible lossy conversion to double
+bool Preferences::IsKeyAcceptable(const std::string& value) {
+	std::string forbidden = "=\n\r \t[]\"";
+	for (char c : forbidden) {
+		if (value.find(c) != std::string::npos) {
+			return false;
+		}
 	}
-	return static_cast<int>(prefTable->GetNumber(key));
+	return true;
 }
 
-void Preferences::PutInt(const char *key, int value) {
-	prefTable->PutNumber(key, value);
-}
-
-float Preferences::GetFloat(const char *key, float defaultValue /* = 0.0 */) {
-	if (!ContainsKey(key)) {
-		return defaultValue; // Prevent possible lossy conversion to double
+void Preferences::ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew) {
+	if (key == kSaveField && prefTable->GetBoolean(kSaveField)) {
+		Save();
+	} else if (IsKeyAcceptable(key)) {
+		std::string value = prefTable->GetString(key);
+		ini.setString(key, value);
 	}
-	return static_cast<float>(prefTable->GetNumber(key));
 }
 
-void Preferences::PutFloat(const char *key, float value) {
-	prefTable->PutNumber(key, (float)value);
+Preferences::Preferences() {
+	prefTable = NetworkTable::GetTable("Preferences");
+	prefTable->AddTableListener(this, true);
+	prefTable->PutBoolean(kSaveField, false);
+	ini = INI::File();
+	Load();
 }
 
-double Preferences::GetDouble(const char *key, double defaultValue /* = 0.0 */) {
-	return prefTable->GetNumber(key, defaultValue);
+void Preferences::LoadTask()  {
+	fileMutex.lock();
+	std::ifstream t(kFileName);
+	std::stringstream buffer;
+	buffer << t.rdbuf();
+	std::string data = buffer.str();
+	t.close();
+	fileMutex.unlock();
+	ini.load(data.c_str(), data.size());
 }
 
-double Preferences::GetBoolean(const char *key, bool defaultValue /* = false */) {
-	return prefTable->GetBoolean(key, defaultValue);
+void Preferences::SaveTask(std::string data) {
+	fileMutex.lock();
+	printf("Saving... Data\n---\n%s\n---\n", data.c_str());
+	std::ofstream t(kFileName);
+	t.write(data.c_str(), data.size());
+	t.close();
+	fileMutex.unlock();
 }
 
-void Preferences::PutBoolean(const char *key, bool value) {
-	prefTable->PutBoolean(key, value);
+void Preferences::Load() {
+	std::async(std::launch::async, &Preferences::LoadTask, this);
 }
 
-bool Preferences::ContainsKey(const char *key) {
-	auto res = prefTable->ContainsKey(key);
-	//printf("ContainsKey: %s = %s\n", key, res ? "true" : "false");
-	return res;
+void Preferences::Save() {
+	std::string data = ini.save(); // ini isn't very thread safe, so don't call it from there
+	std::async(std::launch::async, &Preferences::SaveTask, this, data);
 }
 
+void Preferences::UpdateNT(std::string key) {
+	prefTable->PutString(key, GetString(key));
 }
 
-#endif
+void Preferences::Put(std::string key, std::string value) {
+	PutString(key, value);
+	UpdateNT(key);
+}
+
+std::string Preferences::GetString(std::string key, std::string defaultValue /* = "" */) {
+	return ini.getString(key, defaultValue);
+}
+
+void Preferences::PutString(std::string key, std::string value) {
+	ini.setString(key, value);
+	UpdateNT(key);
+}
+
+int Preferences::GetInt(std::string key, int defaultValue /* = 0 */) {
+	ini.getInt32(key, defaultValue);
+}
+
+void Preferences::PutInt(std::string key, int value) {
+	ini.setInt32(key, value);
+	UpdateNT(key);
+}
+
+float Preferences::GetFloat(std::string key, float defaultValue /* = 0.0 */) {
+	return ini.getFloat(key, defaultValue);
+}
+
+void Preferences::PutFloat(std::string key, float value) {
+	ini.setFloat(key, value);
+	UpdateNT(key);
+}
+
+double Preferences::GetDouble(std::string key, double defaultValue /* = 0.0 */) {
+	return ini.getDouble(key, defaultValue);
+}
+
+void Preferences::PutDouble(std::string key, double value) {
+	ini.setDouble(key, value);
+	UpdateNT(key);
+}
+
+double Preferences::GetBoolean(std::string key, bool defaultValue /* = false */) {
+	return ini.getBool(key, defaultValue);
+}
+
+void Preferences::PutBoolean(std::string key, bool value) {
+	ini.setBool(key, value);
+	UpdateNT(key);
+}
+
+bool Preferences::ContainsKey(std::string key) {
+	return ini.has(key);
+}
+
+//void Preferences::Remove(std::string key)
+	// TODO: Add Remove functionality, maybe
+//}
+
+}
