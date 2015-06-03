@@ -49,6 +49,8 @@ static bool isNewLine(char c) {
 }
 
 void ghLib::INI::warn(const std::string& s) {
+	// TODO: Figure out what to do with this
+	printf("%s\n", s.c_str());
 	//ghLib::console->println(s);
 }
 
@@ -82,6 +84,7 @@ ghLib::INI::Line::Type ghLib::INI::Line::getType() {
 }
 
 std::string ghLib::INI::Line::setValue(std::string newValue) {
+	// TODO: Make this overwrite any whitespace before an inline comment, to maintain its position
 	if (value == newValue) {
 		return value;
 	}
@@ -118,7 +121,6 @@ void ghLib::INI::Line::parse() {
 		Key,
 		Equals,
 		Value,
-		ValueEnd
 	};
 	State state = State::BeginLine;
 	enum class QuoteState { None, Inside, Done };
@@ -134,8 +136,8 @@ void ghLib::INI::Line::parse() {
 	const char* valueEnd = nullptr;
 	std::string hexEscape;
 	size_t i = 0;
+	char c;
 	for (; i <= size; i++) {
-		char c;
 		const char* d;
 		if (i == size) {
 			c = '\0';
@@ -172,9 +174,9 @@ void ghLib::INI::Line::parse() {
 					// Rest of line is a comment
 					state = State::Ignore;
 				} else {
-					warn("junk at end of line");
+					warn(("found junk character '" + (std::string() + c) +  "' at end of line").c_str());
 					error = true;
-					c = '\0';
+					state = State::Ignore;
 				}
 				break;
 			case State::Section:
@@ -196,7 +198,7 @@ void ghLib::INI::Line::parse() {
 					key = std::string(keyStart, static_cast<size_t>(d - keyStart));
 					keyStart = nullptr;
 				} else if (c == '\0' || isNewLine(c)) {
-					warn("key without value");
+					warn(("key \"" + key + "\" without value").c_str());
 					error = true;
 					state = State::Ignore;
 				} else {
@@ -224,8 +226,27 @@ void ghLib::INI::Line::parse() {
 						valueStartPos = i;
 						i--;
 					}
-				} else if (c == '\0' || isNewLine(c) || (c == ';' && quoteState != QuoteState::Inside && escapeState == EscapeState::None)) {
-					state = State::ValueEnd;
+				} else if (c == '\0' || isNewLine(c) || quoteState == QuoteState::Done || (c == ';' && quoteState != QuoteState::Inside && escapeState == EscapeState::None)) {
+					if (escapeState != EscapeState::None) {
+						if (escapeState == EscapeState::Hex) { // We were at the start
+							if (hexEscape.size() > 0) {
+								value += (char)std::stoi(hexEscape, nullptr, 16); // Reached the end in the middle of a hex escape
+							} else { // Should this error?
+								value += "\\x"; // We started a hex escape, but reached the end before we even started
+							}
+						} else {
+							value += '\\'; // We started escaping but got to the end, so treat it as a normal slash
+						}
+					}
+					// Trim trailing whitespace. std::string doesn't have a built in trim for some reason :|
+					// From here: http://stackoverflow.com/a/17976541
+					if (quoteState == QuoteState::None) {
+						// We weren't inside of a quote, so we should trim trailing spaces
+						auto trimmedback = std::find_if_not(value.rbegin(), value.rend(), [](char c){return isSpace(c);}).base();
+						value = std::string(value.begin(), trimmedback);
+					}
+					valueLength = (size_t)(valueEnd + 1 - valueStart);
+					state = State::EndLine;
 					i--;
 					continue;
 				} else {
@@ -258,7 +279,7 @@ void ghLib::INI::Line::parse() {
 								value += "\\x";
 							}
 							escapeState = EscapeState::None;
-							i--; // Redo the previous character if not part of the he
+							i--; // Redo the previous character if not part of the hex
 							continue;
 						}
 					} else if (c == '"') {
@@ -283,28 +304,6 @@ void ghLib::INI::Line::parse() {
 					}
 				}
 				break;
-			case State::ValueEnd:
-				if (escapeState != EscapeState::None) {
-					if (escapeState == EscapeState::Hex) { // We were at the start
-						if (hexEscape.size() > 0) {
-							value += (char)std::stoi(hexEscape, nullptr, 16); // Reached the end in the middle of a hex escape
-						} else { // Should this error?
-							value += "\\x"; // We started a hex escape, but reached the end before we even started
-						}
-					} else {
-						value += '\\'; // We started escaping but got to the end, so treat it as a normal slash
-					}
-				}
-				// Trim trailing whitespace. std::string doesn't have a built in trim for some reason :|
-				// From here: http://stackoverflow.com/a/17976541
-				if (quoteState == QuoteState::None) {
-					// We weren't inside of a quote, so we should trim trailing spaces
-					auto trimmedback = std::find_if_not(value.rbegin(), value.rend(), [](char c){return isSpace(c);}).base();
-					value = std::string(value.begin(), trimmedback);
-				}
-				valueLength = (size_t)(valueEnd + 1 - valueStart);
-				state = State::EndLine;
-				break;
 			case State::Ignore:
 				// Nothing matters </3
 				break;
@@ -313,19 +312,29 @@ void ghLib::INI::Line::parse() {
 			break;
 		}
 	}
-	raw.resize(i + 1); // Truncate to just the bits we've read
+	raw.resize(i + (c != '\0' ? 1 : 0)); // Truncate to just the bits we've read, ignoring last \0
+}
+
+bool ghLib::INI::Line::hasError() {
+	return error;
 }
 
 ghLib::INI::File::File() { }
 
 ghLib::INI::File::~File() { }
 
+bool ghLib::INI::File::load(std::string data) {
+	return load(data.c_str(), data.size());
+}
+
 bool ghLib::INI::File::load(const void* data, size_t size) {
 	const char* chars = static_cast<const char*>(data);
 	size_t i = 0;
 	std::string section;
+	bool error = false;
 	while (i < size) {
 		ghLib::INI::Line line(chars + i, size - i);
+		error |= line.hasError();
 		lines.push_back(line);
 		i += line.getRaw().size();
 		if (line.getType() == ghLib::INI::Line::Type::Section) {
@@ -336,7 +345,7 @@ bool ghLib::INI::File::load(const void* data, size_t size) {
 			// Comment or blank line or something
 		}
 	}
-	return true;
+	return !error;
 }
 
 std::string ghLib::INI::File::save() {
@@ -378,7 +387,7 @@ std::string ghLib::INI::File::save() {
 					lastEntry = (size_t)(i + 1);
 				}
 			}
-			if (section != "" && key.find(section + ".") == std::string::npos || (section == "" && key.find(".") != std::string::npos)) {
+			if ((section != "" && key.find(section + ".") == std::string::npos) || (section == "" && key.find(".") != std::string::npos)) {
 				// TODO: Detect which line endings to use
 				section = key.substr(0, key.find("."));
 				lines.insert(lines.begin() + (int)lastEntry, ghLib::INI::Line("[" + section + "]\n"));
@@ -401,6 +410,36 @@ std::string ghLib::INI::File::save() {
 		output += line.getRaw();
 	}
 	return output;
+}
+
+bool ghLib::INI::File::remove(const std::string& key) {
+	// TODO: Remove section if removing key causes it to be empty?
+	// TODO: Add a removeSection() in order to remove an entirie section?
+	if (!has(key)) {
+		return false;
+	}
+	auto s = values_.size();
+	values_.erase(key);
+	std::string section;
+	bool done = false;
+	s = lines.size();
+	for (size_t i = 0; i < lines.size(); i++) {
+		auto line = lines[i];
+		switch (line.getType()) {
+			case ghLib::INI::Line::Type::Section:
+				section = line.getKey() + ".";
+				break;
+			case ghLib::INI::Line::Type::Entry:
+				if (key == section + line.getKey()) {
+					lines.erase(lines.begin() + (int)i);
+					i--;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	return true;
 }
 
 std::string ghLib::INI::File::getString(const std::string& key) const {
@@ -599,3 +638,4 @@ int32_t ghLib::INI::File::getInt32(const std::string& key, int32_t defaultValue)
 uint32_t ghLib::INI::File::getUInt32(const std::string& key, uint32_t defaultValue) const {
 	return has(key) ? getUInt32(key) : defaultValue;
 }
+
