@@ -7,11 +7,10 @@ ExternalProject_Add(libwebsockets
 	GIT_TAG v1.4-chrome43-firefox-36
 	CMAKE_ARGS -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
 	           -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
-						 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-						-DCMAKE_CPP_COMPILER=${CMAKE_CXX_COMPILER}
-						-DLWS_WITH_SSL=OFF
-						-DLWS_WITHOUT_EXTENSIONS=ON
-
+	           -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+	           -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+	           -DLWS_WITH_SSL=OFF
+	           -DLWS_WITHOUT_EXTENSIONS=ON
 	           -DCMAKE_CXX_FLAGS=${MSVC_COMPILER_DEFS}
 	PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
 	# Disable install step
@@ -20,11 +19,11 @@ ExternalProject_Add(libwebsockets
 
 # Specify include dir
 ExternalProject_Get_Property(libwebsockets source_dir)
-set(LIBWEBSOCKETS_INCLUDE_DIRS ${source_dir}/include PARENT_SCOPE)
+set(LIBWEBSOCKETS_INCLUDE_DIRS ${source_dir}/lib PARENT_SCOPE)
 
 # Specify MainTest's link libraries
 ExternalProject_Get_Property(libwebsockets binary_dir)
-set(LIBWEBSOCKETS_LIBS_DIR ${binary_dir} PARENT_SCOPE)
+set(LIBWEBSOCKETS_LIBS_DIR ${binary_dir}/lib PARENT_SCOPE)
 
 
 

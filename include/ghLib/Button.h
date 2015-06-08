@@ -14,6 +14,8 @@
 #include "ghLib/Preferences.h"
 #include "ghLib/Runnable.h"
 #include "ghLib/DriverStation.h"
+#include "ghLib/Logger.h"
+#include "ghLib/Util.h"
 
 namespace ghLib {
 

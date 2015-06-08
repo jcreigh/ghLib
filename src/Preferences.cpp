@@ -47,7 +47,7 @@ void Preferences::ValueChanged(ITable* source, const std::string& key, EntryValu
 }
 
 Preferences::Preferences() {
-	prefTable = NetworkTable::GetTable("Preferences");
+	prefTable = NetworkTable::GetTable(kTableName);
 	prefTable->AddTableListener(this, true);
 	prefTable->PutBoolean(kSaveField, false);
 	ini = INI::File();
@@ -67,7 +67,7 @@ void Preferences::LoadTask()  {
 
 void Preferences::SaveTask(std::string data) {
 	fileMutex.lock();
-	printf("Saving... Data\n---\n%s\n---\n", data.c_str());
+	//printf("Saving... Data\n---\n%s\n---\n", data.c_str());
 	std::ofstream t(kFileName);
 	t.write(data.c_str(), data.size());
 	t.close();
@@ -102,7 +102,7 @@ void Preferences::PutString(std::string key, std::string value) {
 }
 
 int Preferences::GetInt(std::string key, int defaultValue /* = 0 */) {
-	ini.getInt32(key, defaultValue);
+	return ini.getInt32(key, defaultValue);
 }
 
 void Preferences::PutInt(std::string key, int value) {

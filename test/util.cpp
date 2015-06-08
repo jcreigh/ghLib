@@ -52,3 +52,7 @@ TEST(Util, Deadband) {
 
 	ASSERT_EQ((int)(100 * ghLib::Deadband(0.0, 0.15)), 0);
 }
+
+TEST(Util, Format) {
+	ASSERT_EQ(ghLib::Format("%d %s %.2f abc\n", 2, "foo", 5.123), "2 foo 5.12 abc\n");
+}

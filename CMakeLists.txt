@@ -38,6 +38,7 @@ else(ROBOT)
 endif(ROBOT)
 
 add_subdirectory(${EXT_PROJECTS_DIR}/libwebsockets libwebsockets)
+#add_subdirectory(${EXT_PROJECTS_DIR}/jsoncpp jsoncpp)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
@@ -45,7 +46,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 
-include_directories(${COMMON_INCLUDES} ${NWT_INCLUDE_DIR})
+include_directories(${COMMON_INCLUDES} ${NWT_INCLUDE_DIR} ${LIBWEBSOCKETS_INCLUDE_DIRS})
 
 if(ROBOT)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -fPIC -L.  -march=armv7-a -mtune=cortex-a9 ")
@@ -73,6 +74,7 @@ else(ROBOT)
 			${CMAKE_BINARY_DIR}/lib${PROJECT_NAME}.a
 			${GTEST_LIBS_DIR}/libgtest.a
 			${GTEST_LIBS_DIR}/libgtest_main.a
+			${LIBWEBSOCKETS_LIBS_DIR}/libwebsockets.a
 			${CMAKE_BINARY_DIR}/networktables/libNetworkTables.a
 	)
 endif(ROBOT)

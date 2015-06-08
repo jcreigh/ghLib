@@ -7,18 +7,12 @@
 #include "ghLib/Button.h"
 #include "gtest/gtest.h"
 
-void Sleep(int delay) {
-	std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-}
-
 TEST(Button, SimpleConstructor) {
 	auto button = ghLib::Button(1); // Button 1 on joystick 0
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(1, true);
-	Sleep(50);
+	stick->SetRawButton(1, true); button.Update();
 	ASSERT_TRUE(button.Get());
 	stick->SetRawButton(1, false);
 }
@@ -26,23 +20,17 @@ TEST(Button, SimpleConstructor) {
 TEST(Button, ComplexConstructor) {
 	auto stick = ghLib::Joystick::GetStickForPort(3);
 	auto button = ghLib::Button(5, stick, ghLib::Button::kToggle);
-	ghLib::ButtonRunner::SetEnabled(true);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(5, true);
-	Sleep(50);
+	stick->SetRawButton(5, true); button.Update(); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawButton(5, false);
-	Sleep(50);
+	stick->SetRawButton(5, false); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawButton(5, true);
-	Sleep(50);
+	stick->SetRawButton(5, true); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(5, false);
-	Sleep(50);
+	stick->SetRawButton(5, false); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(5, true);
-	Sleep(50);
+	stick->SetRawButton(5, true); button.Update();
 	ASSERT_TRUE(button.Get());
 	stick->SetRawButton(5, false);
 }
@@ -54,14 +42,11 @@ TEST(Button, RawButton) {
 	pref->PutInt("test.buttonRawTest.js", 2);
 	pref->PutString("test.buttonRawTest.mode", "raw");
 	pref->PutString("test.buttonRawTest.type", "button");
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonRawTest");
 	auto stick = ghLib::Joystick::GetStickForPort(2);
-	ghLib::ButtonRunner::SetEnabled(true);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(5, true);
-	Sleep(50);
+	stick->SetRawButton(5, true); button.Update();
 	ASSERT_TRUE(button.Get());
 	stick->SetRawButton(5, false);
 }
@@ -72,23 +57,17 @@ TEST(Button, ToggleButton) {
 	pref->PutInt("test.buttonToggleTest.js", 3);
 	pref->PutString("test.buttonToggleTest.mode", "toggle");
 	pref->PutString("test.buttonToggleTest.type", "button");
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonToggleTest");
 	auto stick = ghLib::Joystick::GetStickForPort(3);
-	ghLib::ButtonRunner::SetEnabled(true);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(6, true);
-	Sleep(50);
+	stick->SetRawButton(6, true); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawButton(6, false);
-	Sleep(50);
+	stick->SetRawButton(6, false); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawButton(6, true);
-	Sleep(50);
+	stick->SetRawButton(6, true); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(6, false);
-	Sleep(50);
+	stick->SetRawButton(6, false); button.Update();
 	ASSERT_FALSE(button.Get());
 }
 
@@ -98,18 +77,14 @@ TEST(Button, PressButton) {
 	pref->PutInt("test.buttonPressTest.js", 0);
 	pref->PutString("test.buttonPressTest.mode", "press");
 	pref->PutString("test.buttonPressTest.type", "button");
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonPressTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(1, true);
-	Sleep(50);
+	stick->SetRawButton(1, true); button.Update();
 	ASSERT_TRUE(button.Get());
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(1, false);
-	Sleep(50);
+	stick->SetRawButton(1, false); button.Update();
 	ASSERT_FALSE(button.Get());
 }
 
@@ -119,17 +94,13 @@ TEST(Button, ReleaseButton) {
 	pref->PutInt("test.buttonReleaseTest.js", 0);
 	pref->PutString("test.buttonReleaseTest.mode", "release");
 	pref->PutString("test.buttonReleaseTest.type", "button");
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonReleaseTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(1, true);
-	Sleep(50);
+	stick->SetRawButton(1, true); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(1, false);
-	Sleep(50);
+	stick->SetRawButton(1, false); button.Update();
 	ASSERT_TRUE(button.Get());
 	ASSERT_FALSE(button.Get());
 }
@@ -142,20 +113,15 @@ TEST(Button, RawPOV) {
 	pref->PutString("test.buttonRawPovTest.mode", "raw");
 	pref->PutString("test.buttonRawPovTest.type", "pov");
 	pref->PutInt("test.buttonRawPovTest.pov", 2);
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonRawPovTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
 	ASSERT_FALSE(button.Get());
-	stick->SetPOV(2, 45);
-	Sleep(50);
+	stick->SetPOV(2, 45); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetPOV(2, 90);
-	Sleep(50);
+	stick->SetPOV(2, 90); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetPOV(2, 135);
-	Sleep(50);
+	stick->SetPOV(2, 135); button.Update();
 	ASSERT_TRUE(button.Get());
 }
 
@@ -166,30 +132,22 @@ TEST(Button, RawAxisPos) {
 	pref->PutString("test.buttonRawAxisPosTest.mode", "raw");
 	pref->PutString("test.buttonRawAxisPosTest.type", "axis");
 	pref->PutFloat("test.buttonRawAxisPosTest.threshold", 0.6f);
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonRawAxisPosTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	stick->SetRawAxis(3, 0.0f);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
+	stick->SetRawAxis(3, 0.0f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 0.25f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.25f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 0.5f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.5f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 0.75f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.75f); button.Update(); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawAxis(3, 1.0f);
-	Sleep(50);
+	stick->SetRawAxis(3, 1.0f); button.Update(); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawAxis(3, 0.59f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.59f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, -0.75f);
-	Sleep(50);
+	stick->SetRawAxis(3, -0.75f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
 }
 
@@ -200,33 +158,24 @@ TEST(Button, RawAxisNeg) {
 	pref->PutString("test.buttonRawAxisNegTest.mode", "raw");
 	pref->PutString("test.buttonRawAxisNegTest.type", "axis");
 	pref->PutFloat("test.buttonRawAxisNegTest.threshold", -0.6f);
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonRawAxisNegTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	stick->SetRawAxis(3, 0.0f);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
+	stick->SetRawAxis(3, 0.0f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 0.25f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.25f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 0.5f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.5f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 0.75f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.75f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 1.0f);
-	Sleep(50);
+	stick->SetRawAxis(3, 1.0f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, 0.59f);
-	Sleep(50);
+	stick->SetRawAxis(3, 0.59f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
-	stick->SetRawAxis(3, -0.75f);
-	Sleep(50);
+	stick->SetRawAxis(3, -0.75f); button.Update(); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawAxis(3, -0.5f);
-	Sleep(50);
+	stick->SetRawAxis(3, -0.5f); button.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
 }
 
@@ -242,35 +191,28 @@ TEST(Button, Virtual) {
 	pref->PutInt("test.otherButton.js", 0);
 	pref->PutString("test.otherButton.mode", "toggle");
 	pref->PutString("test.otherButton.type", "button");
-	Sleep(50);
 	auto other = ghLib::Button("test.otherButton");
 	auto button = ghLib::Button("test.buttonVirtualTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	stick->SetRawButton(4, false);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
+	stick->SetRawButton(4, false); other.Update(); button.Update();
 	ASSERT_FALSE(button.Get());
 	ASSERT_FALSE(other.Get());
-	stick->SetRawButton(4, true);
-	Sleep(50);
+	stick->SetRawButton(4, true); other.Update(); button.Update();
 	ASSERT_TRUE(other.Get());
 	ASSERT_TRUE(button.Get());
 	ASSERT_TRUE(other.Get());
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(4, false);
-	Sleep(50);
+	stick->SetRawButton(4, false); other.Update(); button.Update();
 	ASSERT_TRUE(other.Get());
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(4, true);
-	Sleep(50);
+	stick->SetRawButton(4, true); other.Update(); button.Update();
 	ASSERT_FALSE(other.Get());
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(4, false);
-	Sleep(50);
+	stick->SetRawButton(4, false); other.Update(); button.Update();
 	ASSERT_FALSE(other.Get());
 	ASSERT_FALSE(button.Get());
-	stick->SetRawButton(4, true);
-	Sleep(50);
+	stick->SetRawButton(4, true); other.Update(); button.Update();
 	ASSERT_TRUE(other.Get());
 	ASSERT_TRUE(button.Get());
 }
@@ -279,15 +221,12 @@ TEST(Button, Invert) {
 	auto pref = ghLib::Preferences::GetInstance();
 	pref->PutInt("test.buttonInvertTest", 6);
 	pref->PutBoolean("test.buttonInvertTest.invert", true);
-	Sleep(50);
 	auto button = ghLib::Button("test.buttonInvertTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
-	ghLib::ButtonRunner::SetEnabled(true);
-	stick->SetRawButton(6, false);
-	Sleep(50);
+	ghLib::ButtonRunner::SetEnabled(false);
+	stick->SetRawButton(6, false); button.Update();
 	ASSERT_TRUE(button.Get());
-	stick->SetRawButton(6, true);
-	Sleep(50);
+	stick->SetRawButton(6, true); button.Update();
 	ASSERT_FALSE(button.Get());
 	stick->SetRawButton(6, false);
 }

@@ -8,6 +8,9 @@
 #define GHLIB_UTIL_H_
 
 #include <algorithm>
+#include <stdarg.h>
+#include <memory>
+#include <string.h>
 
 namespace ghLib {
 
@@ -40,6 +43,7 @@ U Interpolate(T v, T d_min, T d_max, U r_min, U r_max) {
 }
 
 double Deadband(double v, double deadband);
+std::string Format(const std::string fmt_str, ...);
 
 }
 

@@ -14,6 +14,9 @@ bool Runnable::Start() {
 }
 
 bool Runnable::Running() {
+	if (!task.valid()) {
+		return false; // Thread has never started
+	}
 	auto status = task.wait_for(std::chrono::milliseconds(0));
 	if (status == std::future_status::ready) {
 		return false; // Thread has finished

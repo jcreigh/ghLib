@@ -1,3 +1,9 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) Creighton 2015. All Rights Reserved.                         */
+/* Open Source Software - May be modified and shared but must                 */
+/* be accompanied by the license file in the root source directory            */
+/*----------------------------------------------------------------------------*/
+
 #include <stdio.h>
 #include <string>
 #include "networktables/NetworkTable.h"
@@ -5,6 +11,8 @@
 
 #include <gtest/gtest.h>
 #include "ghLib/Preferences.h"
+#include "ghLib/web/Server.h"
+#include "ghLib/Logger.h"
 
 NetworkTableServer* server;
 ITable* testTable;
@@ -27,10 +35,16 @@ int main(int argc, char **argv) {
 	printf("Initializing tests\n");
 	::testing::InitGoogleTest(&argc, argv);
 	printf("Running tests\n");
+
+	//ghLib::Logger::GetLogger("Button")->AddOutputStream(std::cout);
 	auto res = RUN_ALL_TESTS();
 
-	sleep(1);
-	printf("Shutting down\n");
+	//auto ws = ghLib::web::WebServer::GetInstance();
+	//printf("Starting wobserver\n");
+	//ws->SetEnabled(true);
+
+	//sleep(60);
+	//printf("Shutting down\n");
 	auto pref = ghLib::Preferences::GetInstance();
 	pref->Save();
 
