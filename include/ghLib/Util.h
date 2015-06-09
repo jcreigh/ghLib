@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <memory>
 #include <string.h>
+#include "ghLib/util/Filesystem.h"
 
 namespace ghLib {
 

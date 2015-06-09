@@ -11,6 +11,28 @@ namespace ghLib {
 std::unordered_map<std::string, Logger*> Logger::loggers;
 std::chrono::steady_clock::time_point Logger::startTime = std::chrono::steady_clock::now();
 
+std::string RotateFile(std::string path, int n = 0) {
+	std::string newPath = path + (n > 0 ? ghLib::Format(".%d", n) : "");
+	if (ghLib::Util::FS::exists(newPath)) {
+		ghLib::Util::FS::rename(path, RotateFile(path, n + 1));
+	}
+	return newPath;
+}
+
+std::ostream* Logger::CreateFileLogger(std::string path) {
+	std::string parentPath = ghLib::Util::FS::parent_path(path);
+	if (parentPath != "" && !ghLib::Util::FS::is_directory(parentPath)) {
+		if (!ghLib::Util::FS::create_directories(parentPath)) {
+			// Failed to create the log directory, so just return a stringstream to eat everything.
+			// There's probably something better which will actually eat it
+			// Maybe output something to stderr?
+			return new std::stringstream();
+		}
+	}
+	return new std::ofstream(RotateFile(path));
+
+}
+
 Logger* Logger::GetLogger(std::string name /*= ""*/) {
 	if (loggers.count(name) == 0) {
 		auto p = name.rfind(".");
@@ -36,7 +58,7 @@ void Logger::Log(Level level, std::string msg, std::string outName /*= ""*/) {
 		outMsg = ghLib::Format("[%.3f] ", (float)(std::chrono::duration_cast<std::chrono::milliseconds>(ts).count()) / 1000) + outMsg;
 	}
 	for (auto out : outputs) {
-		(*out) << outMsg;
+		(*out) << outMsg << std::flush;
 	}
 	if (parent) {
 		parent->Log(level, msg, outName);
@@ -63,12 +85,20 @@ void Logger::SetOutputLevel(Logger::Level newLevel) {
 	outputLevel = newLevel;
 }
 
+void Logger::AddOutputStream(std::ostream* out) {
+	outputs.push_back(out);
+}
+
 void Logger::AddOutputStream(std::ostream& out) {
-	outputs.push_back(&out);
+	AddOutputStream(&out);
+}
+
+void Logger::DelOutputStream(std::ostream* out) {
+	outputs.erase(std::remove(outputs.begin(), outputs.end(), out), outputs.end());
 }
 
 void Logger::DelOutputStream(std::ostream& out) {
-	outputs.erase(std::remove(outputs.begin(), outputs.end(), &out), outputs.end());
+	DelOutputStream(&out);
 }
 
 void Logger::Trace(std::string msg) {
