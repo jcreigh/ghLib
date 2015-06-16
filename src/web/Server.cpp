@@ -1,3 +1,9 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) Creighton 2015. All Rights Reserved.                         */
+/* Open Source Software - May be modified and shared but must                 */
+/* be accompanied by the license file in the root source directory            */
+/*----------------------------------------------------------------------------*/
+
 #include "ghLib/web/Server.h"
 
 namespace ghLib {
@@ -19,6 +25,8 @@ struct per_session_data__http {
 libwebsocket_protocols WebServer::protocols[] = {
 	{"http-only", WebServer::static_callback_http, sizeof(per_session_data__http), 0},
 	{"nwt", WebServer::static_callback_nwt, sizeof(WebServer::per_session_data__nwt*), 10},
+	{"time", WebServer::static_callback_time, sizeof(WebServer::per_session_data__time*), 15},
+	{"logger", WebServer::static_callback_logger, sizeof(WebServer::per_session_data__logger*), 15},
 	{NULL, NULL, 0, 0}
 };
 
@@ -29,6 +37,8 @@ WebServer::WebServer() : taskRunning(ATOMIC_FLAG_INIT) {
 	info.gid = -1;
 	info.uid = -1;
 	info.protocols = protocols;
+	logger = ghLib::Logger::GetLogger("Debug.Web");
+	logger->Trace("Constructed WebServer");
 }
 
 void WebServer::dump_handshake_info(libwebsocket* wsi) {
@@ -50,9 +60,10 @@ void WebServer::dump_handshake_info(libwebsocket* wsi) {
 
 		lws_hdr_copy(wsi, buf, sizeof buf, (lws_token_indexes)n);
 
-		fprintf(stderr, "    %s = %s\n", (char *)c, buf);
+		logger->Error(ghLib::Format("    %s = %s", (char *)c, buf));
 		n++;
 	} while (c);
+
 }
 
 int WebServer::static_callback_http(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len) {
@@ -84,59 +95,6 @@ try_to_reuse:
 	return 0;
 }
 
-int WebServer::static_callback_nwt(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len) {
-	instance->callback_nwt(context, wsi, reason, user, in, len);
-}
-
-int WebServer::callback_nwt(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len) {
-	per_session_data__nwt* pss = nullptr;
-	if (reason != LWS_CALLBACK_PROTOCOL_INIT) {
-		pss = *((per_session_data__nwt**)user);
-	}
-	std::string inBuf = std::string((const char*)in, len);
-	switch (reason) {
-		case LWS_CALLBACK_ESTABLISHED:
-			*((per_session_data__nwt**)user) = new per_session_data__nwt();
-			break;
-		case LWS_CALLBACK_CLOSED:
-			delete pss;
-			break;
-		case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
-			dump_handshake_info(wsi);
-			break;
-		case LWS_CALLBACK_RECEIVE:
-			if (inBuf.size() > 0) {
-				if (inBuf[0] == 0x00) {
-					// Keep-alive, ignore
-				} else if (inBuf[0] == 0x01) {
-					if (inBuf[1] == 0x00 && inBuf[2] == 0x02) {
-					} else {
-						pss->outBuf += "\x02\x00\x02";
-					}
-				}
-			printf("< %s\n", inBuf.c_str());
-			if (inBuf == "hello\n") {
-				pss->outBuf = "Hello, world!";
-			}
-			}
-			return 1;
-		case LWS_CALLBACK_SERVER_WRITEABLE:
-			if (pss->outBuf.size()) {
-				int m = libwebsocket_write(wsi, (uint8_t*)pss->outBuf.c_str(), pss->outBuf.size(), LWS_WRITE_TEXT);
-				if (m < (int)pss->outBuf.size()) {
-					lwsl_err("ERROR %d writing to nwt socket\n", pss->outBuf.size());
-					pss->outBuf = "";
-					return -1;
-				}
-				pss->outBuf = "";
-			}
-			break;
-		default:
-			break;
-	}
-	return 0;
-}
-
 
 void WebServer::SetPort(int newPort) {
 	bool isRunning = Running();
@@ -146,9 +104,10 @@ void WebServer::SetPort(int newPort) {
 }
 
 void WebServer::Task() {
+	logger->Trace("Creating libwebsocket context");
 	context = libwebsocket_create_context(&info);
 	if (context == NULL) {
-		lwsl_err("libwebsocket init failed\n");
+		logger->Error("libwebsocket init failed");
 		return;
 	}
 	auto prev = std::chrono::steady_clock::now();
@@ -158,8 +117,11 @@ void WebServer::Task() {
 		if (std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count() > 50) {
 			// Trigger writeable every 50ms
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::PREFERENCES]);
+			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::TIME]);
+			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::LOGGER]);
 		}
 	}
+	logger->Trace("Destroying libwebsocket context");
 	libwebsocket_context_destroy(context);
 }
 
