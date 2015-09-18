@@ -24,7 +24,7 @@ struct per_session_data__http {
 
 libwebsocket_protocols WebServer::protocols[] = {
 	{"http-only", WebServer::static_callback_http, sizeof(per_session_data__http), 0},
-	{"nwt", WebServer::static_callback_nwt, sizeof(WebServer::per_session_data__nwt*), 10},
+	{"nwtproxy", WebServer::static_callback_nwtproxy, sizeof(WebServer::per_session_data__nwtproxy*), 10},
 	{"time", WebServer::static_callback_time, sizeof(WebServer::per_session_data__time*), 15},
 	{"logger", WebServer::static_callback_logger, sizeof(WebServer::per_session_data__logger*), 15},
 	{NULL, NULL, 0, 0}
@@ -60,7 +60,7 @@ void WebServer::dump_handshake_info(libwebsocket* wsi) {
 
 		lws_hdr_copy(wsi, buf, sizeof buf, (lws_token_indexes)n);
 
-		logger->Error(ghLib::Format("    %s = %s", (char *)c, buf));
+		logger->Debug(ghLib::Format("    %s = %s", (char *)c, buf));
 		n++;
 	} while (c);
 

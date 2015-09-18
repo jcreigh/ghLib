@@ -18,6 +18,8 @@ NetworkTableServer* server;
 ITable* testTable;
 
 int main(int argc, char **argv) {
+	auto log = ghLib::Logger::GetLogger("Debug");
+	log->SetVerbosity(ghLib::Logger::TRACE);
 	NetworkTable::SetServerMode();
 	NetworkTable::Initialize();
 
@@ -32,19 +34,21 @@ int main(int argc, char **argv) {
 	//auto listener = new ServerListener();
 	//testTable->AddTableListener(listener, true);
 
-	printf("Initializing tests\n");
+	log->Info("Initializing tests");
 	::testing::InitGoogleTest(&argc, argv);
-	printf("Running tests\n");
+	log->Info("Running tests");
 
 	//ghLib::Logger::GetLogger("Button")->AddOutputStream(std::cout);
 	auto res = RUN_ALL_TESTS();
 
-	//auto ws = ghLib::web::WebServer::GetInstance();
-	//printf("Starting wobserver\n");
-	//ws->SetEnabled(true);
+	log->AddOutputStream(std::cout);
 
-	//sleep(60);
-	//printf("Shutting down\n");
+	auto ws = ghLib::web::WebServer::GetInstance();
+	log->Info("Starting wobserver");
+	ws->SetEnabled(true);
+
+	sleep(60);
+	log->Info("Shutting down");
 	auto pref = ghLib::Preferences::GetInstance();
 	pref->Save();
 

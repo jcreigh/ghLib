@@ -12,6 +12,7 @@
 #include <memory>
 #include <string.h>
 #include "ghLib/util/Filesystem.h"
+#include "ghLib/util/Clock.h"
 
 namespace ghLib {
 

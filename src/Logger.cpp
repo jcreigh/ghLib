@@ -4,12 +4,14 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
+#include <iostream>
 #include "ghLib/Logger.h"
 
 namespace ghLib {
 
 std::unordered_map<std::string, Logger*> Logger::loggers;
 std::chrono::steady_clock::time_point Logger::startTime = std::chrono::steady_clock::now();
+std::string Logger::levelNames[7] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "DISABLED"};
 
 std::string RotateFile(std::string path, int n = 0) {
 	std::string newPath = path + (n > 0 ? ghLib::Format(".%d", n) : "");
@@ -17,6 +19,43 @@ std::string RotateFile(std::string path, int n = 0) {
 		ghLib::Util::FS::rename(path, RotateFile(path, n + 1));
 	}
 	return newPath;
+}
+
+Logger::Entry::Entry(Logger::Level level, std::string text, Logger* baseLogger, ghLib::Clock::duration time)
+: level(level), text(text), time(time), baseLogger(baseLogger) {}
+
+Logger::Entry::Entry(Logger::Level level, std::string text, Logger* baseLogger)
+	: level(level), text(text), baseLogger(baseLogger) {
+	time = std::chrono::duration_cast<ghLib::Clock::duration>(std::chrono::steady_clock::now() - ghLib::Clock::started);
+}
+
+Logger::Level Logger::Entry::GetLevel() {
+	return level;
+}
+
+std::string Logger::Entry::GetText() {
+	return text;
+}
+
+ghLib::Clock::time_point Logger::Entry::GetTime() {
+	return ghLib::Clock::time_point(std::chrono::duration_cast<ghLib::Clock::duration>(ghLib::Clock::epoch.time_since_epoch())) + time;
+}
+
+Logger* Logger::Entry::GetLogger() {
+	return baseLogger;
+}
+
+std::string Logger::Entry::GetOutput() {
+	std::string outMsg = "[" + Logger::levelNames[level] + "] " + (baseLogger->GetName().size() ? ("[" + baseLogger->GetName() + "] ") : "") + text + "\n";
+	if (baseLogger->IsShowingTimestamps()) {
+		outMsg = ghLib::Format("[%.3f] ", (double)(std::chrono::duration_cast<std::chrono::milliseconds>(GetTime().time_since_epoch()).count()) / 1000) + outMsg;
+	}
+	return outMsg;
+}
+
+std::ostream& operator<<(std::ostream& os, Logger::Entry& entry) {
+	os << entry.GetOutput();
+	return os;
 }
 
 std::ostream* Logger::CreateFileLogger(std::string path) {
@@ -30,7 +69,6 @@ std::ostream* Logger::CreateFileLogger(std::string path) {
 		}
 	}
 	return new std::ofstream(RotateFile(path));
-
 }
 
 Logger* Logger::GetLogger(std::string name /*= ""*/) {
@@ -43,30 +81,57 @@ Logger* Logger::GetLogger(std::string name /*= ""*/) {
 	return loggers[name];
 }
 
-Logger::Logger(std::string name, Logger* parent /*= nullptr*/) : name(name), parent(parent), outputLevel(Level::TRACE), timestamps(true) {}
+Logger::Logger(std::string name, Logger* parent /*= nullptr*/) : name(name), parent(parent), verbosity(Level::TRACE), timestamps(true) {}
 
-void Logger::Log(Level level, std::string msg, std::string outName /*= ""*/) {
-	if (outName.size() == 0) {
-		outName = name;
+void Logger::Log(Level level, std::string msg, Logger* baseLogger /*= nullptr*/) {
+	if (baseLogger == nullptr) {
+		baseLogger = this;
 	}
-	if (level < outputLevel || level == Level::DISABLED) {
+
+	auto entry = Entry(level, msg, baseLogger); // Always store the entry, despite log level
+	entries.push_back(entry);
+
+	if (level < verbosity || level == Level::DISABLED) {
 		return;
 	}
-	std::string outMsg = "[" + levelNames[level] + "] " + (outName.size() ? ("[" + outName + "] ") : "") + msg + "\n";
-	if (timestamps) {
-		auto ts = std::chrono::steady_clock::now() - startTime;
-		outMsg = ghLib::Format("[%.3f] ", (float)(std::chrono::duration_cast<std::chrono::milliseconds>(ts).count()) / 1000) + outMsg;
+
+	for (auto& out : outputs) {
+		(*out) << entry << std::flush;
 	}
-	for (auto out : outputs) {
-		(*out) << outMsg << std::flush;
-	}
+
 	if (parent) {
-		parent->Log(level, msg, outName);
+		parent->Log(level, msg, baseLogger);
 	}
+}
+
+std::vector<Logger::Entry> Logger::GetEntries() {
+	return entries;
+}
+
+void Logger::DumpEntries(std::ostream& os) {
+	for (auto& entry : entries) {
+		auto level = entry.GetLevel();
+		if (level >= verbosity && level != Level::DISABLED) {
+			os << entry;
+		}
+	}
+}
+
+std::ostream& operator<<(std::ostream& os, Logger& logger) {
+	logger.DumpEntries(os);
+	return os;
+}
+
+Logger* Logger::GetSubLogger(std::string subName) {
+	return GetLogger((name.size() > 0 ? (name + ".") : "") + subName);
 }
 
 void Logger::ShowTimestamps(bool newValue) {
 	timestamps = newValue;
+}
+
+bool Logger::IsShowingTimestamps() {
+	return timestamps;
 }
 
 std::string Logger::GetName() {
@@ -77,12 +142,12 @@ Logger* Logger::GetParent() {
 	return parent;
 }
 
-Logger::Level Logger::GetOutputLevel() {
-	return outputLevel;
+Logger::Level Logger::GetVerbosity() {
+	return verbosity;
 }
 
-void Logger::SetOutputLevel(Logger::Level newLevel) {
-	outputLevel = newLevel;
+void Logger::SetVerbosity(Logger::Level newLevel) {
+	verbosity = newLevel;
 }
 
 void Logger::AddOutputStream(std::ostream* out) {

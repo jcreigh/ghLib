@@ -4,6 +4,9 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
+#ifndef GHLIB_LOGGER_H_
+#define GHLIB_LOGGER_H_
+
 #include <vector>
 #include <ostream>
 #include <chrono>
@@ -23,33 +26,48 @@ namespace ghLib {
 class Logger {
 	public:
 		enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL, DISABLED };
-		std::string levelNames[7] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "DISABLED"};
+		static std::string levelNames[7];
+		class Entry {
+			private:
+				Level level;
+				std::string text;
+				ghLib::Clock::duration time;
+				Logger* baseLogger;
+			public:
+				Entry(Level level, std::string text, Logger* baseLogger, ghLib::Clock::duration time);
+				Entry(Level level, std::string text, Logger* baseLogger);
+				Level GetLevel();
+				std::string GetText();
+				ghLib::Clock::time_point GetTime();
+				Logger* GetLogger();
+				std::string GetOutput();
+				friend std::ostream& operator<<(std::ostream& os, const Entry& entry);
+		};
 	private:
+		std::vector<Entry> entries;
 		static std::unordered_map<std::string, Logger*> loggers;
 		static std::chrono::steady_clock::time_point startTime;
 		Logger* parent;
 		std::string name;
 		bool timestamps;
 		std::vector<std::ostream*> outputs;
-		Level outputLevel;
+		Level verbosity;
 
 		Logger(std::string name, Logger* parent = nullptr);
 	public:
-		//class File : public std::ostream {
-			//public:
-			//File(std::string name, std::string path = GHLIB_LOGGER_BASEPATH) : std::ostream(CreateFileLogger(path + "/" + name)), std::ios(0) {}
-			//~File() { delete rdbuf(); }
-		//};
-
 		static std::ostream* CreateFileLogger(std::string path);
 		static Logger* GetLogger(std::string name = "");
 
-		void Log(Level level, std::string msg, std::string outName = "");
+		void Log(Level level, std::string msg, Logger* baseLogger = nullptr);
+		std::vector<Entry> GetEntries();
+		void DumpEntries(std::ostream& os);
+		Logger* GetSubLogger(std::string subName);
 		void ShowTimestamps(bool newValue);
+		bool IsShowingTimestamps(); // TODO: Rename to something better maybe
 		std::string GetName();
 		Logger* GetParent();
-		Level GetOutputLevel();
-		void SetOutputLevel(Level newLevel);
+		Level GetVerbosity();
+		void SetVerbosity(Level newLevel);
 		void AddOutputStream(std::ostream* out);
 		void AddOutputStream(std::ostream& out);
 		void DelOutputStream(std::ostream* out);
@@ -63,4 +81,9 @@ class Logger {
 
 };
 
+std::ostream& operator<<(std::ostream& os, Logger::Entry& entry);
+std::ostream& operator<<(std::ostream& os, Logger& logger);
+
 }
+
+#endif /* GHLIB_LOGGER_H_ */

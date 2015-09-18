@@ -35,11 +35,11 @@ TEST(Logger, Output) {
 	globalLogger->AddOutputStream(globalStream);
 	fooLogger->Debug("Hello, World");
 	ASSERT_EQ(globalStream.str(), "[DEBUG] [foo] Hello, World\n");
-	fooLogger->SetOutputLevel(ghLib::Logger::Level::WARN);
+	fooLogger->SetVerbosity(ghLib::Logger::Level::WARN);
 	fooLogger->Info("Nothing");
 	ASSERT_EQ(globalStream.str(), "[DEBUG] [foo] Hello, World\n");
 	fooLogger->AddOutputStream(fooStream);
-	fooLogger->SetOutputLevel(ghLib::Logger::Level::INFO);
+	fooLogger->SetVerbosity(ghLib::Logger::Level::INFO);
 	fooLogger->Error("Quack");
 	ASSERT_EQ(globalStream.str(), "[DEBUG] [foo] Hello, World\n[ERROR] [foo] Quack\n");
 	ASSERT_EQ(fooStream.str(), "[ERROR] [foo] Quack\n");
@@ -48,4 +48,19 @@ TEST(Logger, Output) {
 	ASSERT_EQ(fooStream.str(), "[ERROR] [foo] Quack\n");
 	globalLogger->DelOutputStream(globalStream);
 	fooLogger->DelOutputStream(fooStream);
+}
+
+TEST(Logger, StoredEntries) {
+	auto logger = ghLib::Logger::GetLogger("bar");
+	logger->ShowTimestamps(false);
+	logger->Fatal("Fatal entry");
+	logger->Debug("Debug entry");
+	logger->Trace("Trace entry");
+	std::stringstream os;
+	logger->DumpEntries(os);
+	ASSERT_EQ("[FATAL] [bar] Fatal entry\n[DEBUG] [bar] Debug entry\n[TRACE] [bar] Trace entry\n", os.str());
+	os.str("");
+	logger->SetVerbosity(ghLib::Logger::Level::WARN);
+	logger->DumpEntries(os);
+	ASSERT_EQ("[FATAL] [bar] Fatal entry\n", os.str());
 }
