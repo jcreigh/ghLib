@@ -26,13 +26,14 @@ libwebsocket_protocols WebServer::protocols[] = {
 	{"http-only", WebServer::static_callback_http, sizeof(per_session_data__http), 0},
 	{"nwtproxy", WebServer::static_callback_nwtproxy, sizeof(WebServer::per_session_data__nwtproxy*), 10},
 	{"time", WebServer::static_callback_time, sizeof(WebServer::per_session_data__time*), 15},
+	{"ping", WebServer::static_callback_ping, sizeof(WebServer::per_session_data__ping*), 15},
 	{"logger", WebServer::static_callback_logger, sizeof(WebServer::per_session_data__logger*), 15},
 	{NULL, NULL, 0, 0}
 };
 
 WebServer::WebServer() : taskRunning(ATOMIC_FLAG_INIT) {
 	memset(&info, 0, sizeof(info));
-	info.port = 8080;
+	info.port = 8080; // TODO: Make configurable?
 	info.iface = NULL;
 	info.gid = -1;
 	info.uid = -1;
@@ -118,6 +119,7 @@ void WebServer::Task() {
 			// Trigger writeable every 50ms
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::PREFERENCES]);
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::TIME]);
+			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::PING]);
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::LOGGER]);
 		}
 	}

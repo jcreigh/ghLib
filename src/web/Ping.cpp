@@ -5,26 +5,25 @@
 /*----------------------------------------------------------------------------*/
 
 #include "ghLib/web/Server.h"
-#include "ghLib/util/Clock.h"
 
 namespace ghLib {
 namespace web {
 
-int WebServer::static_callback_time(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len) {
-	instance->callback_time(context, wsi, reason, user, in, len);
+int WebServer::static_callback_ping(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len) {
+	instance->callback_ping(context, wsi, reason, user, in, len);
 }
 
-int WebServer::callback_time(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len) {
-	auto log = logger->GetSubLogger("Time");
-	per_session_data__time* pss = nullptr;
+int WebServer::callback_ping(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len) {
+	auto log = logger->GetSubLogger("Ping");
+	per_session_data__ping* pss = nullptr;
 	if (reason != LWS_CALLBACK_PROTOCOL_INIT) {
-		pss = *((per_session_data__time**)user);
+		pss = *((per_session_data__ping**)user);
 	}
 	std::string inBuf = std::string((const char*)in, len);
 	switch (reason) {
 		case LWS_CALLBACK_ESTABLISHED:
-			*((per_session_data__time**)user) = new per_session_data__time();
-			pss = *((per_session_data__time**)user);
+			*((per_session_data__ping**)user) = new per_session_data__ping();
+			pss = *((per_session_data__ping**)user);
 			log->Trace(ghLib::Format("[%p] Connection established", pss));
 			break;
 		case LWS_CALLBACK_CLOSED:
@@ -38,15 +37,7 @@ int WebServer::callback_time(libwebsocket_context* context, libwebsocket* wsi, l
 		case LWS_CALLBACK_RECEIVE:
 			if (inBuf.size() > 0) {
 				log->Debug(ghLib::Format("<<< %s <<<", inBuf.c_str()));
-				if (inBuf[0] == 'S') {
-					ghLib::Clock::setEpoch(std::stol(inBuf.substr(1)));
-					pss->outBuf = "OK";
-				} else if (inBuf == "G") {
-					pss->outBuf = ghLib::Format("%d", ghLib::Clock::getEpoch());
-				}
-				if (inBuf == "hello\n") {
-					pss->outBuf = "Hello, world!";
-				}
+				pss->outBuf = inBuf;
 			}
 			return 1;
 		case LWS_CALLBACK_SERVER_WRITEABLE:
@@ -54,7 +45,7 @@ int WebServer::callback_time(libwebsocket_context* context, libwebsocket* wsi, l
 				int m = libwebsocket_write(wsi, (uint8_t*)pss->outBuf.c_str(), pss->outBuf.size(), LWS_WRITE_TEXT);
 				log->Debug(ghLib::Format(">>> %s >>>", pss->outBuf.c_str()));
 				if (m < (int)pss->outBuf.size()) {
-					log->Error(ghLib::Format("%d writing to nwt socket\n", pss->outBuf.size()));
+					log->Error(ghLib::Format("%d writing to ping socket\n", pss->outBuf.size()));
 					pss->outBuf = "";
 					return -1;
 				}

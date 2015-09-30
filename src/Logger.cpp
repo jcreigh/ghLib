@@ -108,10 +108,24 @@ std::vector<Logger::Entry> Logger::GetEntries() {
 	return entries;
 }
 
-void Logger::DumpEntries(std::ostream& os) {
-	for (auto& entry : entries) {
+size_t Logger::Count() {
+	return entries.size();
+}
+
+void Logger::DumpEntries(std::ostream& os, int start /* = 0 */, int count /* = -1 */, Logger::Level verbosity_ /* = Level::DISABLED */) {
+	if (count < 0) { // If count < 0, then we want to show the entries up to the end
+		count = (int)entries.size();
+	}
+	if (start < 0) { // If start < 0, we want to start counting back from the most recent entry
+		start = (int)entries.size() - start;
+	}
+	if (verbosity_ == Level::DISABLED) { // If verbosity_ isn't specified, use the one set in the instance
+		verbosity_ = verbosity;
+	}
+	for (int i = 0; ((start + i) < (int)entries.size()) && (i < count); i++) {
+		auto entry = entries[start + i];
 		auto level = entry.GetLevel();
-		if (level >= verbosity && level != Level::DISABLED) {
+		if (level >= verbosity_ && level != Level::DISABLED) {
 			os << entry;
 		}
 	}

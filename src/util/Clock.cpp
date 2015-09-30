@@ -19,9 +19,16 @@ Clock::time_point Clock::now() noexcept {
 	return Clock::time_point(dur);
 }
 
-void Clock::setEpoch(uint32_t seconds) {
-	ghLib::Logger::GetLogger("Debug.Clock")->Trace(ghLib::Format("Setting epoch to %d", seconds));
-	epoch = std::chrono::steady_clock::time_point(std::chrono::seconds(seconds));
+void Clock::setEpoch(uint64_t milliseconds) {
+	auto log = ghLib::Logger::GetLogger("Debug.Clock");
+	log->Trace(ghLib::Format("Setting epoch to %d", milliseconds));
+	epoch = std::chrono::steady_clock::time_point(std::chrono::milliseconds(milliseconds));
+	//log->Trace(ghLib::Format("Epoch is %d", epoch.time_since_epoch().count()));
 }
+
+uint64_t Clock::getEpoch() {
+	return (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(epoch.time_since_epoch()).count();
+}
+
 
 }

@@ -23,37 +23,57 @@ int WebServer::callback_logger(libwebsocket_context* context, libwebsocket* wsi,
 	switch (reason) {
 		case LWS_CALLBACK_ESTABLISHED:
 			*((per_session_data__logger**)user) = new per_session_data__logger();
+			pss = *((per_session_data__logger**)user);
+			log->Trace(ghLib::Format("[%p] Connection established", pss));
 			break;
 		case LWS_CALLBACK_CLOSED:
+			log->Trace(ghLib::Format("[%p] Closed", pss));
 			delete pss;
 			break;
 		case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
+			log->Trace(ghLib::Format("Filter protocol connection"));
 			dump_handshake_info(wsi);
 			break;
 		case LWS_CALLBACK_RECEIVE:
 			if (inBuf.size() > 0) {
-				log->Debug(ghLib::Format("< %s", inBuf.c_str()));
-				if (inBuf[0] == 'G') {
-					auto logName = inBuf.substr(1);
-					log->Trace(ghLib::Format("Getting entries from log: \"%s\"", logName.c_str()));
-					std::stringstream ss;
-					ss << *ghLib::Logger::GetLogger(logName);
-					pss->outBuf = ss.str();
-				}
+				pss->inBuf += inBuf;
 			}
 			return 1;
 		case LWS_CALLBACK_SERVER_WRITEABLE:
+			{
+			auto pos = (pss->inBuf).find("\n");
+			if (pos != std::string::npos) {
+				auto buf = (pss->inBuf).substr(0, pos);
+				pss->inBuf = (pss->inBuf).substr(pos + 1);
+				auto tokens = ghLib::Tokenize(buf, ',', '\\');
+				if (tokens[0] == "G") {
+					auto logName = tokens[1];
+					int start = 0;
+					int count = 10;
+					if (tokens.size() > 2) {
+						start = std::stoi(tokens[2]);
+						if (tokens.size() > 3) {
+							count = std::stoi(tokens[3]);
+						}
+					}
+					log->Trace(ghLib::Format("Getting %d entries from log \"%s\" starting at %d", count, logName.c_str(), start));
+					std::stringstream ss;
+					ghLib::Logger::GetLogger(logName)->DumpEntries(ss, start, count);
+					pss->outBuf = ss.str();
+				}
+			}
 			if (pss->outBuf.size()) {
 				int m = libwebsocket_write(wsi, (uint8_t*)pss->outBuf.c_str(), pss->outBuf.size(), LWS_WRITE_TEXT);
-				log->Debug(ghLib::Format("> %s", pss->outBuf.c_str()));
+				log->Debug(ghLib::Format(">>> %s >>>", pss->outBuf.c_str()));
 				if (m < (int)pss->outBuf.size()) {
-					log->Error(ghLib::Format("%d writing to nwt socket", pss->outBuf.size()));
+					log->Error(ghLib::Format("%d writing to logger socket", pss->outBuf.size()));
 					pss->outBuf = "";
 					return -1;
 				}
 				pss->outBuf = "";
 			}
 			break;
+			}
 		default:
 			break;
 	}

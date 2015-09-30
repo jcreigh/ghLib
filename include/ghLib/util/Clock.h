@@ -21,7 +21,8 @@ namespace ghLib {
 		static std::chrono::steady_clock::time_point epoch;
 
 		static time_point now() noexcept;
-		static void setEpoch(uint32_t seconds);
+		static void setEpoch(uint64_t milliseconds);
+		static uint64_t getEpoch();
 	};
 
 }

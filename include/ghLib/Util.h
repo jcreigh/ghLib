@@ -7,12 +7,14 @@
 #ifndef GHLIB_UTIL_H_
 #define GHLIB_UTIL_H_
 
-#include <algorithm>
-#include <stdarg.h>
 #include <memory>
+#include <vector>
+#include <sstream>
+#include <stdarg.h>
 #include <string.h>
-#include "ghLib/util/Filesystem.h"
+#include <algorithm>
 #include "ghLib/util/Clock.h"
+#include "ghLib/util/Filesystem.h"
 
 namespace ghLib {
 
@@ -46,6 +48,9 @@ U Interpolate(T v, T d_min, T d_max, U r_min, U r_max) {
 
 double Deadband(double v, double deadband);
 std::string Format(const std::string fmt_str, ...);
+std::string FilterASCII(const std::string in);
+std::vector<std::string>& Tokenize(const std::string &input, char delimeter, std::vector<std::string>& tokens, char escape = '\0');
+std::vector<std::string> Tokenize(const std::string &input, char delimeter, char escape = '\0');
 
 }
 

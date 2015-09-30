@@ -60,7 +60,8 @@ class Logger {
 
 		void Log(Level level, std::string msg, Logger* baseLogger = nullptr);
 		std::vector<Entry> GetEntries();
-		void DumpEntries(std::ostream& os);
+		size_t Count();
+		void DumpEntries(std::ostream& os, int start = 0, int count = -1, Level verbosity_ = Level::DISABLED);
 		Logger* GetSubLogger(std::string subName);
 		void ShowTimestamps(bool newValue);
 		bool IsShowingTimestamps(); // TODO: Rename to something better maybe

@@ -23,6 +23,7 @@ public:
 	static int static_callback_http(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	static int static_callback_nwtproxy(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	static int static_callback_time(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
+	static int static_callback_ping(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	static int static_callback_logger(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	void SetEnabled(bool enabled, bool block = false);
 	void SetPort(int newPort);
@@ -33,6 +34,7 @@ private:
 		HTTP = 0,
 		PREFERENCES,
 		TIME,
+		PING,
 		LOGGER,
 		COUNT
 	};
@@ -43,7 +45,11 @@ private:
 	struct per_session_data__time {
 		std::string outBuf;
 	};
+	struct per_session_data__ping {
+		std::string outBuf;
+	};
 	struct per_session_data__logger {
+		std::string inBuf;
 		std::string outBuf;
 	};
 
@@ -60,6 +66,7 @@ private:
 	int callback_http(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	int callback_nwtproxy(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	int callback_time(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
+	int callback_ping(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	int callback_logger(libwebsocket_context* context, libwebsocket* wsi, libwebsocket_callback_reasons reason, void* user, void* in, size_t len);
 	void dump_handshake_info(libwebsocket* wsi);
 

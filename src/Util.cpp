@@ -35,4 +35,48 @@ std::string Format(const std::string fmt_str, ...) {
 	return std::string(formatted.get());
 }
 
+std::string FilterASCII(const std::string in) {
+	std::string out;
+	for (const char& c : in) {
+		//out += Format("%d,", (unsigned char)c);
+		if (c < ' ' || c >= 127) {
+			out += ".";
+			//out += Format("\\x%02x", (unsigned char)c);
+		} else {
+			out += c;
+		}
+	}
+	return out;
+}
+
+std::vector<std::string>& Tokenize(const std::string &input, char delimeter, std::vector<std::string>& tokens, char escape /* = '\0' */) {
+	std::string buf = "";
+	bool escaping = false;
+	for (int i = 0; i < (int)input.size(); i++) {
+		char c = input[i];
+		if (!escaping && c == escape) {
+			escaping = true;
+		} else if (!escaping && c == delimeter) {
+			tokens.push_back(buf);
+			buf = "";
+		} else {
+			if (escaping && (c != escape && c != delimeter)) { // We escaped nothing, so put the escape character back
+				buf += escape;
+			}
+			buf += c;
+			escaping = false;
+		}
+	}
+	if (buf.size()) {
+		tokens.push_back(buf);
+	}
+	return tokens;
+}
+
+std::vector<std::string> Tokenize(const std::string &input, char delimeter, char escape /* = '\0' */) {
+	std::vector<std::string> tokens;
+	Tokenize(input, delimeter, tokens, escape);
+	return tokens;
+}
+
 }

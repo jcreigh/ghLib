@@ -28,6 +28,7 @@ int WebServer::callback_nwtproxy(libwebsocket_context* context, libwebsocket* ws
 			{
 			*((per_session_data__nwtproxy**)user) = new per_session_data__nwtproxy();
 			pss = *((per_session_data__nwtproxy**)user);
+			log->Trace(ghLib::Format("[%p] Connection established", pss));
 
 			pss->socket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -39,7 +40,7 @@ int WebServer::callback_nwtproxy(libwebsocket_context* context, libwebsocket* ws
 			serverAddr.sin_port = htons(1735); // Default network tables port. TODO: Make this configurable?
 
 			if (connect(pss->socket, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-				log->Error("Error connecting to network table\n"); // TODO: Do something
+				log->Error("Error connecting to network table"); // TODO: Do something
 				close(pss->socket);
 				pss->socket = 0;
 			} else {
@@ -59,18 +60,21 @@ int WebServer::callback_nwtproxy(libwebsocket_context* context, libwebsocket* ws
 
 			break;
 		case LWS_CALLBACK_CLOSED:
+			log->Trace(ghLib::Format("[%p] Closed", pss));
 			close(pss->socket);
 			delete pss;
 			break;
 		case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
+			log->Trace(ghLib::Format("[%p] Filter protocol connection", pss));
 			dump_handshake_info(wsi);
 			break;
 		case LWS_CALLBACK_RECEIVE:
-			log->Debug(ghLib::Format("< %s\n", inBuf.c_str()));
+			log->Trace(ghLib::Format("<<< %s <<<", ghLib::FilterASCII(inBuf).c_str()));
 			if (inBuf.size() > 0) {
 				if (send(pss->socket, inBuf.c_str(), inBuf.size(), 0) == -1) {
-					log->Error(ghLib::Format("Error writing to socket: %d\n", errno));
-					pss->outBuf = ghLib::Format("Error writing to socket: %d\n", errno);
+					pss->outBuf = ghLib::Format("Error writing to socket: %d", errno);
+					log->Error(pss->outBuf);
+					pss->outBuf += "\n";
 				}
 			}
 			return 1;
@@ -80,18 +84,19 @@ int WebServer::callback_nwtproxy(libwebsocket_context* context, libwebsocket* ws
 					char incomingBuffer[1024];
 					ssize_t recvAmount = recv(pss->socket, incomingBuffer, 1024, 0);
 					if (recvAmount < 0 && errno != EAGAIN) {
-						pss->outBuf = ghLib::Format("Error reading from socket: (%s) %d %d\n", strerror(errno), errno, EAGAIN);
+						pss->outBuf = ghLib::Format("Error reading from socket: (%s) %d", strerror(errno), errno);
 						log->Error(pss->outBuf);;
+						pss->outBuf += "\n";
 					} else if (recvAmount > 0) {
 						pss->outBuf = std::string(incomingBuffer, recvAmount);
 					}
 				}
 
 				if (pss->outBuf.size()) {
-					int m = libwebsocket_write(wsi, (uint8_t*)pss->outBuf.c_str(), pss->outBuf.size(), LWS_WRITE_TEXT);
-					log->Debug(ghLib::Format("> %s\n", pss->outBuf.c_str()));
+					int m = libwebsocket_write(wsi, (uint8_t*)pss->outBuf.c_str(), pss->outBuf.size(), LWS_WRITE_BINARY);
+					log->Trace(ghLib::Format(">>> %s >>>", ghLib::FilterASCII(pss->outBuf).c_str()));
 					if (m < (int)pss->outBuf.size()) {
-						log->Error(ghLib::Format("%d writing to nwtproxy socket\n", pss->outBuf.size()));
+						log->Error(ghLib::Format("%d writing to nwtproxy socket", pss->outBuf.size()));
 						pss->outBuf = "";
 						return -1;
 					}

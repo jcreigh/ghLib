@@ -25,14 +25,14 @@ int main(int argc, char **argv) {
 
 	testTable = NetworkTable::GetTable("Test");
 
-	//class ServerListener : public ITableListener {
-		//virtual void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew){
-			//fprintf(stdout, "Got key in table: %s = %f\n", key.c_str(), value.f);
-			//fflush(stdout);
-		//};
-	//};
-	//auto listener = new ServerListener();
-	//testTable->AddTableListener(listener, true);
+	class ServerListener : public ITableListener {
+		virtual void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew){
+			fprintf(stdout, "Got key in table: %s = %f\n", key.c_str(), value.f);
+			fflush(stdout);
+		};
+	};
+	auto listener = new ServerListener();
+	testTable->AddTableListener(listener, true);
 
 	log->Info("Initializing tests");
 	::testing::InitGoogleTest(&argc, argv);
@@ -47,14 +47,14 @@ int main(int argc, char **argv) {
 	log->Info("Starting wobserver");
 	ws->SetEnabled(true);
 
-	sleep(60);
+	sleep(600);
 	log->Info("Shutting down");
 	auto pref = ghLib::Preferences::GetInstance();
 	pref->Save();
 
-	//testTable->RemoveTableListener(listener);
+	testTable->RemoveTableListener(listener);
 	NetworkTable::Shutdown();
-	//delete listener;
+	delete listener;
 
 	return res;
 }
