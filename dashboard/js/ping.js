@@ -1,4 +1,8 @@
-Ping = Class.create({
+define(["jquery", "prototype", "chart"], function(jq) {
+
+loadCSS("css/logger.css");
+
+PingClass = Class.create({
 	initialize: function() {
 		this.pings = {}
 		this.doPing = 0;
@@ -14,8 +18,11 @@ Ping = Class.create({
 		this.ws = new WebSocket("ws://localhost:8080/", ["ping"]);
 		this.ws.onmessage = this.onmessage.bind(this);
 	},
+	ready: function() {
+		return this.ws && this.ws.readyState == 1;
+	},
 	handler: function() {
-		if (!this.ws || this.ws.readyState != 1) { // Not open yet
+		if (!this.ready()) { // Not open yet
 			return
 		}
 		for (var r in this.pings) {
@@ -50,22 +57,72 @@ Ping = Class.create({
 	}
 });
 
+Ping = new PingClass();
+
 Pinger = Class.create({
-	initialize: function(elm) {
-		this.ping = new Ping();
-		this.element = elm;
+	initialize: function(selector){
+		this.ping = Ping;
+		this.selector = selector;
+		this.element = jQuery(selector + " .ping_result");
 		this.lastPingID = -1;
-		setInterval(this.doPing.bind(this), 2000);
+		this.histSize = 50;
+		setInterval(this.doPing.bind(this), 1000);
+		this.pingBuf = []
+		for (i = 0; i < this.histSize; i++) {
+			this.pingBuf.push(0);
+		}
+		this.chartElm = jQuery(selector + " .ping_chart");
+
+		if (this.chartElm != null) {
+			var data = {
+				labels: [],
+				datasets: [{
+							label: "Ping Times",
+							fillColor: "rgba(151,187,205,0.5)",
+							strokeColor: "rgba(151,187,205,0.8)",
+							highlightFill: "rgba(151,187,205,0.75)",
+							highlightStroke: "rgba(151,187,205,1)",
+							data: this.pingBuf
+			}]};
+			for (i = 0; i < this.histSize; i++) {
+				data["labels"].push("");
+			}
+			var opts = { animation: false };
+			this.chart = new Chart(this.chartElm[0].getContext("2d")).Bar(data, opts);
+		}
+	},
+	pushTime: function(t) {
+		this.pingBuf.shift();
+		this.pingBuf.push(t);
+		if (this.chart != null) {
+			this.update();
+		}
 	},
 	doPing: function() {
-		if (this.lastPingID > 0 && this.ping.ws && this.ping.ws.readyState == 1) {
+		if (this.lastPingID > 0 && this.ping.ready()) {
 			var res = this.ping.getResult(this.lastPingID);
 			if (res >= 0) {
-				this.element.html(res);
+				if (this.element != null) {
+					this.element.html(res);
+				}
+				this.pushTime(res)
+			} else if (res == -2) {
+				this.pushTime(2000);
 			}
+			jQuery(this.selector + " > div").removeClass("panel-danger").addClass("panel-primary");
 		} else {
+			this.pushTime(0);
 			this.element.html("n/a");
+			jQuery(this.selector + " > div").removeClass("panel-primary").addClass("panel-danger");
 		}
 		this.lastPingID = this.ping.ping();
+	},
+	update: function() {
+		for (i = 0; i < this.histSize; i++) {
+			this.chart.datasets[0].bars[i].value = this.pingBuf[i];
+		}
+		this.chart.update();
 	}
+});
+
 });

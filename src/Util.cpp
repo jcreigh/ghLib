@@ -5,6 +5,7 @@
 /*----------------------------------------------------------------------------*/
 
 #include "ghLib/Util.h"
+#include <map>
 
 namespace ghLib {
 
@@ -49,6 +50,32 @@ std::string FilterASCII(const std::string in) {
 	return out;
 }
 
+std::string EscapeString(const std::string in) {
+	std::string out;
+	std::map<char, std::string> escapeMap = {
+		{'"', "\\\""},
+		{'\\', "\\\\"},
+		{'\b', "\\b"},
+		{'\f', "\\f"},
+		{'\n', "\\n"},
+		{'\r', "\\r"},
+		{'\t', "\\t"}
+	};
+
+	for (const char& c : in) {
+		auto esc = escapeMap.find(c);
+		if (esc == escapeMap.end()) {
+			if (c < ' ') {
+				out += Format("\\u00%02x,", (unsigned char)c);
+			} else {
+				out += c;
+			}
+		} else {
+			out += esc->second;
+		}
+	}
+	return out;
+}
 std::vector<std::string>& Tokenize(const std::string &input, char delimeter, std::vector<std::string>& tokens, char escape /* = '\0' */) {
 	std::string buf = "";
 	bool escaping = false;

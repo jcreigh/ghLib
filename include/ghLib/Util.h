@@ -49,6 +49,7 @@ U Interpolate(T v, T d_min, T d_max, U r_min, U r_max) {
 double Deadband(double v, double deadband);
 std::string Format(const std::string fmt_str, ...);
 std::string FilterASCII(const std::string in);
+std::string EscapeString(const std::string in);
 std::vector<std::string>& Tokenize(const std::string &input, char delimeter, std::vector<std::string>& tokens, char escape = '\0');
 std::vector<std::string> Tokenize(const std::string &input, char delimeter, char escape = '\0');
 

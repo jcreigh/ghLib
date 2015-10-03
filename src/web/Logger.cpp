@@ -24,10 +24,10 @@ int WebServer::callback_logger(libwebsocket_context* context, libwebsocket* wsi,
 		case LWS_CALLBACK_ESTABLISHED:
 			*((per_session_data__logger**)user) = new per_session_data__logger();
 			pss = *((per_session_data__logger**)user);
-			log->Trace(ghLib::Format("[%p] Connection established", pss));
+			log->Info(ghLib::Format("[%p] Connection established", pss));
 			break;
 		case LWS_CALLBACK_CLOSED:
-			log->Trace(ghLib::Format("[%p] Closed", pss));
+			log->Info(ghLib::Format("[%p] Closed", pss));
 			delete pss;
 			break;
 		case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
@@ -56,17 +56,45 @@ int WebServer::callback_logger(libwebsocket_context* context, libwebsocket* wsi,
 							count = std::stoi(tokens[3]);
 						}
 					}
-					log->Trace(ghLib::Format("Getting %d entries from log \"%s\" starting at %d", count, logName.c_str(), start));
-					std::stringstream ss;
-					ghLib::Logger::GetLogger(logName)->DumpEntries(ss, start, count);
-					pss->outBuf = ss.str();
+					log->Debug(ghLib::Format("[%p] Getting %d entries from log \"%s\" starting at %d", pss, count, logName.c_str(), start));
+					auto entries = ghLib::Logger::GetLogger(logName)->GetEntries(start, count);
+					std::string outBuf = ghLib::Format("{\"logName\": \"%s\", \"start\": %d, \"count\": %d, \"entries\": [", logName.c_str(), start, (int)entries.size());
+					for (int i = 0; i < (int)entries.size(); i++) {
+						auto e = entries[i];
+						outBuf += ghLib::Format("{\"level\": \"%s\", \"text\": \"%s\", \"time\": %d, \"logger\": \"%s\"}",
+								ghLib::Logger::levelNames[e.GetLevel()].c_str(),
+								ghLib::EscapeString(e.GetText()).c_str(),
+								(std::chrono::duration_cast<std::chrono::milliseconds>(e.GetTime().time_since_epoch()).count()),
+								ghLib::EscapeString(e.GetLogger()->GetName()).c_str()
+								);
+						if ((i + 1) < (int)entries.size()) {
+							outBuf += ",";
+						}
+					}
+					outBuf += "]}";
+					pss->outBuf += outBuf;
+				} else if (tokens[0] == "S") {
+					auto logName = tokens[1];
+					auto levelInput = tokens[2];
+					bool valid = false;
+					auto level = ghLib::Logger::levelMap.find(levelInput);
+					if (level != ghLib::Logger::levelMap.end()) {
+						log->Info(ghLib::Format("Setting log \"%s\" verbosity to %s", logName.c_str(), levelInput.c_str()));
+						ghLib::Logger::GetLogger(logName)->SetVerbosity(level->second);
+						pss->outBuf += "OK\n";
+					} else {
+						log->Error(ghLib::Format("Can't set log \"%s\" verbosity. Invalid level: \"%s\"", logName.c_str(), levelInput.c_str()));
+						pss->outBuf += "FAIL\n";
+					}
 				}
+					// enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL, DISABLED };
+
 			}
 			if (pss->outBuf.size()) {
 				int m = libwebsocket_write(wsi, (uint8_t*)pss->outBuf.c_str(), pss->outBuf.size(), LWS_WRITE_TEXT);
-				log->Debug(ghLib::Format(">>> %s >>>", pss->outBuf.c_str()));
+				log->Debug(ghLib::Format(">>> %s >>>", ghLib::FilterASCII(pss->outBuf).c_str()));
 				if (m < (int)pss->outBuf.size()) {
-					log->Error(ghLib::Format("%d writing to logger socket", pss->outBuf.size()));
+					log->Error(ghLib::Format("[%p] %d writing to logger socket", pss, pss->outBuf.size()));
 					pss->outBuf = "";
 					return -1;
 				}

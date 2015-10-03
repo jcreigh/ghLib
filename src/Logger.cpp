@@ -12,6 +12,15 @@ namespace ghLib {
 std::unordered_map<std::string, Logger*> Logger::loggers;
 std::chrono::steady_clock::time_point Logger::startTime = std::chrono::steady_clock::now();
 std::string Logger::levelNames[7] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "DISABLED"};
+std::map<std::string, Logger::Level> Logger::levelMap = {
+	{"TRACE", Logger::Level::TRACE},
+	{"DEBUG", Logger::Level::DEBUG},
+	{"INFO", Logger::Level::INFO},
+	{"WARN", Logger::Level::WARN},
+	{"ERROR", Logger::Level::ERROR},
+	{"FATAL", Logger::Level::FATAL},
+	{"DISABLED", Logger::Level::DISABLED}
+};
 
 std::string RotateFile(std::string path, int n = 0) {
 	std::string newPath = path + (n > 0 ? ghLib::Format(".%d", n) : "");
@@ -81,7 +90,23 @@ Logger* Logger::GetLogger(std::string name /*= ""*/) {
 	return loggers[name];
 }
 
-Logger::Logger(std::string name, Logger* parent /*= nullptr*/) : name(name), parent(parent), verbosity(Level::TRACE), timestamps(true) {}
+Logger::Logger(std::string name, Logger* parent /*= nullptr*/) : name(name), parent(parent), verbosity(Level::TRACE), timestamps(true) {
+	auto pref = ghLib::Preferences::GetInstance();
+	std::string key = "logger.log" + (name.size() > 0 ? ("." + name) : "");
+	if (pref->ContainsKey(key)) {
+		auto level = ghLib::Logger::levelMap.find(pref->GetString(key));
+		if (level != ghLib::Logger::levelMap.end()) {
+			verbosity = level->second;
+			return;
+		}
+	}
+	if (pref->ContainsKey("logger.default")) {
+		auto level = ghLib::Logger::levelMap.find(pref->GetString("logger.default"));
+		if (level != ghLib::Logger::levelMap.end()) {
+			verbosity = level->second;
+		}
+	}
+}
 
 void Logger::Log(Level level, std::string msg, Logger* baseLogger /*= nullptr*/) {
 	if (baseLogger == nullptr) {
@@ -104,15 +129,11 @@ void Logger::Log(Level level, std::string msg, Logger* baseLogger /*= nullptr*/)
 	}
 }
 
-std::vector<Logger::Entry> Logger::GetEntries() {
+std::vector<Logger::Entry> Logger::GetAllEntries() {
 	return entries;
 }
 
-size_t Logger::Count() {
-	return entries.size();
-}
-
-void Logger::DumpEntries(std::ostream& os, int start /* = 0 */, int count /* = -1 */, Logger::Level verbosity_ /* = Level::DISABLED */) {
+std::vector<Logger::Entry> Logger::GetEntries(int start /* = 0 */, int count /* = -1 */, Logger::Level verbosity_ /* = Level::DISABLED */) {
 	if (count < 0) { // If count < 0, then we want to show the entries up to the end
 		count = (int)entries.size();
 	}
@@ -122,12 +143,25 @@ void Logger::DumpEntries(std::ostream& os, int start /* = 0 */, int count /* = -
 	if (verbosity_ == Level::DISABLED) { // If verbosity_ isn't specified, use the one set in the instance
 		verbosity_ = verbosity;
 	}
+
+	std::vector<Logger::Entry> out;
 	for (int i = 0; ((start + i) < (int)entries.size()) && (i < count); i++) {
 		auto entry = entries[start + i];
 		auto level = entry.GetLevel();
 		if (level >= verbosity_ && level != Level::DISABLED) {
-			os << entry;
+			out.push_back(entry);
 		}
+	}
+	return out;
+}
+
+size_t Logger::Count() {
+	return entries.size();
+}
+
+void Logger::DumpEntries(std::ostream& os, int start /* = 0 */, int count /* = -1 */, Logger::Level verbosity_ /* = Level::DISABLED */) {
+	for (auto &e : GetEntries(start, count, verbosity_)) {
+		os << e;
 	}
 }
 

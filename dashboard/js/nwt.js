@@ -1,4 +1,14 @@
-var EntryType = Object.freeze({"Boolean": 0x00, "Double": 0x01, "String": 0x02, "Boolean Array": 0x10, "Double Array": 0x11, "String Array": 0x12});
+var EntryType = Object.freeze({
+	"BOOLEAN": 0x00, "DOUBLE": 0x01, "STRING": 0x02, "BOOLEAN ARRAY": 0x10, "DOUBLE ARRAY": 0x11, "STRING ARRAY": 0x12,
+	"properties": {
+		0x00: {"name": "Boolean", "value": 0x00, "short": "B"},
+		0x01: {"name": "Double", "value": 0x01, "short": "D"},
+		0x02: {"name": "String", "value": 0x02, "short": "S"},
+		0x10: {"name": "Boolean Array", "value": 0x10, "short": "[B]"},
+		0x11: {"name": "Double Array", "value": 0x11, "short": "[D]"},
+		0x12: {"name": "String Array", "value": 0x12, "short": "[S]"}
+	}
+});
 
 var Entry = Class.create({
 	initialize: function(name, type, value, eid, seq) {
@@ -26,7 +36,7 @@ var encodeEntry = function(entry) {
 	var out = [];
 	if (entry.eid == 0xffff) { // new Entry
 		out.push(0x10);
-		var ev = encodeValue(EntryType["String"], entry.name);
+		var ev = encodeValue(EntryType["STRING"], entry.name);
 		out = out.concat(ev);
 		out.push(entry.type);
 		out.push(0xff); // eid is 0xffff for new entry
@@ -48,9 +58,9 @@ var encodeEntry = function(entry) {
 
 var encodeValue = function(type, value) {
 	var out = [];
-	if (type == EntryType["Boolean"]) {
+	if (type == EntryType["BOOLEAN"]) {
 		out.push(value ? 0x01 : 0x00);
-	} else if (type == EntryType["Double"]) {
+	} else if (type == EntryType["DOUBLE"]) {
 		var buf = new ArrayBuffer(8);
 		var flt = new Float64Array(buf);
 		var u8 = new Uint8Array(buf);
@@ -58,7 +68,7 @@ var encodeValue = function(type, value) {
 		for (var i = 0; i < 8; i++) {
 			out.push(u8[i]);
 		}
-	} else if (type == EntryType["String"]) {
+	} else if (type == EntryType["STRING"]) {
 		value = "" + value;
 		out.push(value.length >> 8);
 		out.push(value.length & 0xff);
@@ -79,10 +89,10 @@ var decodeValue = function(type, data) {
 	var value;
 	var rest;
 	var valid = true;
-	if (type == EntryType["Boolean"] && data.length >= 1) {
+	if (type == EntryType["BOOLEAN"] && data.length >= 1) {
 		value = data[0];
 		rest = data.slice(1);
-	} else if (type == EntryType["Double"] && data.length >= 8) {
+	} else if (type == EntryType["DOUBLE"] && data.length >= 8) {
 		var buf = new ArrayBuffer(8);
 		var flt = new Float64Array(buf);
 		var u8 = new Uint8Array(buf);
@@ -91,11 +101,11 @@ var decodeValue = function(type, data) {
 		}
 		value = flt[0];
 		rest = data.slice(8);
-	} else if (type == EntryType["String"] && data.length >= 2) {
+	} else if (type == EntryType["STRING"] && data.length >= 2) {
 		var len = (data[0] << 8) + data[1];
-		//console.log("String of length: " + len + "|" + data.charCodeAt(0) + "|" + data.charCodeAt(1));
+		//console.log("STRING of length: " + len + "|" + data.charCodeAt(0) + "|" + data.charCodeAt(1));
 		if (data.length >= (2 + len)) {
-			value = String.fromCharCode.apply("", data.slice(2, 2 + len));
+			value = STRING.fromCharCode.apply("", data.slice(2, 2 + len));
 			rest = data.slice(2 + len);
 		} else {
 			valid = false;
@@ -140,6 +150,7 @@ NWT = Class.create({
 		this.ws.onmessage = this.onmessage.bind(this);
 		this.outbuf = [];
 		this.inbuf = [];
+		this.statusText = "";
 		for (var n in this.entries) {
 			this.entries[n].eid = 0xffff;
 			this.entries[n].dirty = true;
@@ -171,12 +182,12 @@ NWT = Class.create({
 					data = data.slice(1);
 				} else if (field == 0x02 && data.length >= 3) { // Protocol Version Unsupported
 					data = data.slice(3);
-				} else if (field == 0x10 || field == 0x11) {
+				} else if (field == 0x10 || field == 0x11) { // New entry / Updated entry
 					var name;
 					var type = 0xff;
 					var rest = data.slice(1);
 					if (field == 0x10) {
-						var r = decodeValue(EntryType["String"], rest);
+						var r = decodeValue(EntryType["STRING"], rest);
 						if (!r["valid"]) {
 							break;
 						}
@@ -208,6 +219,7 @@ NWT = Class.create({
 					}
 					data = r["rest"];
 					this.entries[name] = new Entry(name, type, r["value"], eid, seq);
+					$(document).trigger("nwt:" + (field == 0x10 ? "new" : "update"), [name]);
 				}
 				break;
 			}
@@ -252,7 +264,7 @@ NWT = Class.create({
 	set: function(name, value) {
 		var entry = this.getEntry(name);
 		if (!entry) {
-			entry = new Entry(name, EntryType["String"] /* TODO: Detect type */ , value, 0xffff, 0);
+			entry = new Entry(name, EntryType["STRING"] /* TODO: Detect type */ , value, 0xffff, 0);
 		}
 		entry.set(value);
 		this.entries[name] = entry;

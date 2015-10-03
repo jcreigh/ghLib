@@ -62,5 +62,6 @@ TEST(Logger, StoredEntries) {
 	os.str("");
 	logger->SetVerbosity(ghLib::Logger::Level::WARN);
 	logger->DumpEntries(os);
+	printf("|%s|\n", os.str().c_str());
 	ASSERT_EQ("[FATAL] [bar] Fatal entry\n", os.str());
 }

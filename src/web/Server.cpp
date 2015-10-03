@@ -39,7 +39,7 @@ WebServer::WebServer() : taskRunning(ATOMIC_FLAG_INIT) {
 	info.uid = -1;
 	info.protocols = protocols;
 	logger = ghLib::Logger::GetLogger("Debug.Web");
-	logger->Trace("Constructed WebServer");
+	logger->Info("Constructed WebServer");
 }
 
 void WebServer::dump_handshake_info(libwebsocket* wsi) {
@@ -121,6 +121,7 @@ void WebServer::Task() {
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::TIME]);
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::PING]);
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::LOGGER]);
+			prev = std::chrono::steady_clock::now();
 		}
 	}
 	logger->Trace("Destroying libwebsocket context");

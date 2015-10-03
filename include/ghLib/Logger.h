@@ -7,6 +7,7 @@
 #ifndef GHLIB_LOGGER_H_
 #define GHLIB_LOGGER_H_
 
+#include <map>
 #include <vector>
 #include <ostream>
 #include <chrono>
@@ -16,6 +17,7 @@
 #include <unordered_map>
 #include <sys/stat.h>
 #include "ghLib/Util.h"
+#include "ghLib/Preferences.h"
 
 #ifndef GHLIB_LOGGER_BASEPATH
 #define GHLIB_LOGGER_BASEPATH ""
@@ -27,6 +29,7 @@ class Logger {
 	public:
 		enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL, DISABLED };
 		static std::string levelNames[7];
+		static std::map<std::string, Logger::Level> levelMap;
 		class Entry {
 			private:
 				Level level;
@@ -59,7 +62,8 @@ class Logger {
 		static Logger* GetLogger(std::string name = "");
 
 		void Log(Level level, std::string msg, Logger* baseLogger = nullptr);
-		std::vector<Entry> GetEntries();
+		std::vector<Entry> GetAllEntries();
+		std::vector<Entry> GetEntries(int start = 0, int count = -1, Level verbosity_ = Level::DISABLED);
 		size_t Count();
 		void DumpEntries(std::ostream& os, int start = 0, int count = -1, Level verbosity_ = Level::DISABLED);
 		Logger* GetSubLogger(std::string subName);

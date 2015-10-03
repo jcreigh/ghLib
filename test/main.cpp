@@ -18,10 +18,11 @@ NetworkTableServer* server;
 ITable* testTable;
 
 int main(int argc, char **argv) {
-	auto log = ghLib::Logger::GetLogger("Debug");
-	log->SetVerbosity(ghLib::Logger::TRACE);
 	NetworkTable::SetServerMode();
 	NetworkTable::Initialize();
+
+	auto log = ghLib::Logger::GetLogger("Debug");
+	log->SetVerbosity(ghLib::Logger::TRACE);
 
 	testTable = NetworkTable::GetTable("Test");
 

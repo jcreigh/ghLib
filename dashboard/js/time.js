@@ -1,3 +1,5 @@
+define(["prototype"], function() {
+
 Time = Class.create({
 	initialize: function() {
 		this.connect();
@@ -9,14 +11,19 @@ Time = Class.create({
 		if (this.ws && this.ws.readyState != 3) { // Connecting, connected, or closing
 			return;
 		}
-		this.ws = new WebSocket("ws://localhost:8080/", ["time"]);
-		this.ws.onmessage = this.onmessage.bind(this);
-		this.outbuf = []
-		this.inbuf = []
-		this.sendRaw("G");
+		if (Ping.ready()) { // Ping has connected, so this should be good
+			this.ws = new WebSocket("ws://localhost:8080/", ["time"]);
+			this.ws.onmessage = this.onmessage.bind(this);
+			this.outbuf = []
+			this.inbuf = []
+			this.sendRaw("G");
+		}
+	},
+	ready: function() {
+		return this.ws && this.ws.readyState == 1;
 	},
 	handler: function() {
-		if (!this.ws || this.ws.readyState != 1) {
+		if (!this.ready()) {
 			return;
 		}
 		if (this.outbuf.length > 0) {
@@ -54,4 +61,24 @@ Time = Class.create({
 	setNow: function() {
 		this.set((new Date()).getTime());
 	}
-})
+});
+
+TimeSetter = Class.create({ // Keeps remote time aligned with real time
+	initialize: function() {
+		this.time = new Time();
+		this.synced = false;
+		setInterval(this.doTime.bind(this), 1000);
+	},
+	doTime: function() {
+		if (this.time.ready()) {
+			if (this.synced == false) {
+				this.time.setNow();
+				this.synced = true;
+			}
+		} else {
+			this.synced = false;
+		}
+	}
+});
+
+});

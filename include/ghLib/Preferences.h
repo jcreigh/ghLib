@@ -4,6 +4,9 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
+#ifndef GHLIB_PREFERENCES_H_
+#define GHLIB_PREFERENCES_H_
+
 #include <string>
 #include <future>
 #include <fstream>
@@ -51,3 +54,4 @@ private:
 
 }
 
+#endif /* GHLIB_PREFERENCES_H_ */
