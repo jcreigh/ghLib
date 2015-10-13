@@ -28,40 +28,43 @@ TEST(Logger, GetParent) {
 TEST(Logger, Output) {
 	auto globalLogger = ghLib::Logger::GetLogger();
 	auto fooLogger = ghLib::Logger::GetLogger("foo");
-	globalLogger->ShowTimestamps(false);
-	fooLogger->ShowTimestamps(false);
+	auto globalView = new ghLib::Logger::View(ghLib::Logger::Level::TRACE, false);
+	auto fooView = new ghLib::Logger::View(ghLib::Logger::Level::TRACE, false);
+	fooView->SetVerbosity("", ghLib::Logger::Level::DISABLED);
 	std::stringstream globalStream;
 	std::stringstream fooStream;
-	globalLogger->AddOutputStream(globalStream);
+	globalView->AddOutputStream(globalStream);
 	fooLogger->Debug("Hello, World");
-	ASSERT_EQ(globalStream.str(), "[DEBUG] [foo] Hello, World\n");
+	ASSERT_EQ("[DEBUG] [foo] Hello, World\n", globalStream.str());
 	fooLogger->SetVerbosity(ghLib::Logger::Level::WARN);
 	fooLogger->Info("Nothing");
-	ASSERT_EQ(globalStream.str(), "[DEBUG] [foo] Hello, World\n");
-	fooLogger->AddOutputStream(fooStream);
+	ASSERT_EQ("[DEBUG] [foo] Hello, World\n", globalStream.str());
+	fooView->AddOutputStream(fooStream);
 	fooLogger->SetVerbosity(ghLib::Logger::Level::INFO);
 	fooLogger->Error("Quack");
-	ASSERT_EQ(globalStream.str(), "[DEBUG] [foo] Hello, World\n[ERROR] [foo] Quack\n");
-	ASSERT_EQ(fooStream.str(), "[ERROR] [foo] Quack\n");
+	ASSERT_EQ("[DEBUG] [foo] Hello, World\n[ERROR] [foo] Quack\n", globalStream.str());
+	ASSERT_EQ("[ERROR] [foo] Quack\n", fooStream.str());
 	globalLogger->Fatal("Meow");
-	ASSERT_EQ(globalStream.str(), "[DEBUG] [foo] Hello, World\n[ERROR] [foo] Quack\n[FATAL] Meow\n");
-	ASSERT_EQ(fooStream.str(), "[ERROR] [foo] Quack\n");
-	globalLogger->DelOutputStream(globalStream);
-	fooLogger->DelOutputStream(fooStream);
+	ASSERT_EQ("[DEBUG] [foo] Hello, World\n[ERROR] [foo] Quack\n[FATAL] Meow\n", globalStream.str());
+	ASSERT_EQ("[ERROR] [foo] Quack\n", fooStream.str());
+	delete globalView;
+	delete fooView;
 }
 
 TEST(Logger, StoredEntries) {
 	auto logger = ghLib::Logger::GetLogger("bar");
-	logger->ShowTimestamps(false);
+	auto view = new ghLib::Logger::View(ghLib::Logger::Level::DISABLED, false);
+	view->SetVerbosity("bar", ghLib::Logger::Level::TRACE);
 	logger->Fatal("Fatal entry");
 	logger->Debug("Debug entry");
 	logger->Trace("Trace entry");
 	std::stringstream os;
-	logger->DumpEntries(os);
+	view->DumpEntries(os);
 	ASSERT_EQ("[FATAL] [bar] Fatal entry\n[DEBUG] [bar] Debug entry\n[TRACE] [bar] Trace entry\n", os.str());
 	os.str("");
-	logger->SetVerbosity(ghLib::Logger::Level::WARN);
-	logger->DumpEntries(os);
-	printf("|%s|\n", os.str().c_str());
+	view->SetVerbosity("bar", ghLib::Logger::Level::WARN);
+	view->DumpEntries(os);
+	//printf("|%s|\n", os.str().c_str());
 	ASSERT_EQ("[FATAL] [bar] Fatal entry\n", os.str());
+	delete view;
 }

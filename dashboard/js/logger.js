@@ -29,6 +29,7 @@ Logger = Class.create({
 		var elm = jQuery(this.selector + " tbody");
 		elm.scroll(this.scroll.bind(this));
 		elm.data("Scroll_AtBottom", true);
+		jQuery(this.selector + " .logger-level").change(this.levelChangeHandler.bind(this));
 		this.logs = [];
 		setInterval(this.handler.bind(this), 1000);
 		setInterval(this.connect.bind(this), 100);
@@ -57,7 +58,7 @@ Logger = Class.create({
 			return
 		}
 		jQuery(this.selector + " > div").removeClass("panel-danger").addClass("panel-primary");
-		this.ws.send("G,," + (this.logs.length) + "\n");
+		this.ws.send("G," + (this.logs.length) + "\n");
 	},
 	onmessage: function(event) {
 		var data = JSON.parse(event.data);
@@ -66,9 +67,12 @@ Logger = Class.create({
 			this.logs[data["start"] + i] = newLog;
 			//console.log("|" + (elm.scrollTop() + elm.innerHeight()) + "|" + elm[0].scrollHeight + "|");
 
-			var elm = jQuery(this.selector + " tbody")
-			elm.append(
-					"<tr><td>" + newLog.time + "</td><td>" + newLog.level+ "</td><td>" + newLog.baseLogger + "</td><td>" +newLog.text + "</td></tr>");
+			var elm = jQuery(this.selector + " tbody");
+			var newTR = jQuery("<tr><td>" + newLog.time + "</td><td>" + newLog.level+ "</td><td>" + newLog.baseLogger + "</td><td>" +newLog.text + "</td></tr>");
+			if (LogLevel[newLog.level] < LogLevel[this.getSelectedLevel()]) {
+				newTR.hide();
+			}
+			elm.append(newTR);
 			if (elm.data("Scroll_AtBottom")) {
 				elm.scrollTop(elm[0].scrollHeight);
 			}
@@ -78,7 +82,7 @@ Logger = Class.create({
 	},
 	resize: function(e) { // This is silly
 		var table = jQuery(this.selector + " table");
-		var tr = jQuery(table).find("tbody tr:first");
+		var tr = jQuery(table).find("tbody tr:visible:first");
 		var cells = jQuery(tr).children().slice(0, 3);
 		var w = 0;
 		for (i = 0; i < 3; i++) {
@@ -106,7 +110,20 @@ Logger = Class.create({
 				this.resize();
 			}
 		}
-
+	},
+	getSelectedLevel: function() {
+		return jQuery(this.selector + " .logger-level").val();
+	},
+	levelChangeHandler: function(e) {
+		var newValue = this.getSelectedLevel();
+		var trs = jQuery(this.selector + " tbody tr");
+		for (var i = 0; i < this.logs.length; i++) {
+			if (LogLevel[this.logs[i].level] < LogLevel[newValue]) {
+				trs[i].hide();
+			} else {
+				trs[i].show();
+			}
+		}
 	}
 
 });

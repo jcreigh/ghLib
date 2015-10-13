@@ -42,7 +42,9 @@ int main(int argc, char **argv) {
 	//ghLib::Logger::GetLogger("Button")->AddOutputStream(std::cout);
 	auto res = RUN_ALL_TESTS();
 
-	log->AddOutputStream(std::cout);
+	ghLib::Logger::Reset();
+	auto view = new ghLib::Logger::View(ghLib::Logger::Level::TRACE);
+	view->AddOutputStream(std::cout);
 
 	auto ws = ghLib::web::WebServer::GetInstance();
 	log->Info("Starting wobserver");
@@ -57,5 +59,5 @@ int main(int argc, char **argv) {
 	NetworkTable::Shutdown();
 	delete listener;
 
-	return res;
+	//return res;
 }

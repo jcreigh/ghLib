@@ -11,16 +11,8 @@ namespace ghLib {
 
 std::unordered_map<std::string, Logger*> Logger::loggers;
 std::chrono::steady_clock::time_point Logger::startTime = std::chrono::steady_clock::now();
-std::string Logger::levelNames[7] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "DISABLED"};
-std::map<std::string, Logger::Level> Logger::levelMap = {
-	{"TRACE", Logger::Level::TRACE},
-	{"DEBUG", Logger::Level::DEBUG},
-	{"INFO", Logger::Level::INFO},
-	{"WARN", Logger::Level::WARN},
-	{"ERROR", Logger::Level::ERROR},
-	{"FATAL", Logger::Level::FATAL},
-	{"DISABLED", Logger::Level::DISABLED}
-};
+std::vector<Logger::Entry> Logger::entries;
+std::vector<Logger::View*> Logger::views;
 
 std::string RotateFile(std::string path, int n = 0) {
 	std::string newPath = path + (n > 0 ? ghLib::Format(".%d", n) : "");
@@ -28,43 +20,6 @@ std::string RotateFile(std::string path, int n = 0) {
 		ghLib::Util::FS::rename(path, RotateFile(path, n + 1));
 	}
 	return newPath;
-}
-
-Logger::Entry::Entry(Logger::Level level, std::string text, Logger* baseLogger, ghLib::Clock::duration time)
-: level(level), text(text), time(time), baseLogger(baseLogger) {}
-
-Logger::Entry::Entry(Logger::Level level, std::string text, Logger* baseLogger)
-	: level(level), text(text), baseLogger(baseLogger) {
-	time = std::chrono::duration_cast<ghLib::Clock::duration>(std::chrono::steady_clock::now() - ghLib::Clock::started);
-}
-
-Logger::Level Logger::Entry::GetLevel() {
-	return level;
-}
-
-std::string Logger::Entry::GetText() {
-	return text;
-}
-
-ghLib::Clock::time_point Logger::Entry::GetTime() {
-	return ghLib::Clock::time_point(std::chrono::duration_cast<ghLib::Clock::duration>(ghLib::Clock::epoch.time_since_epoch())) + time;
-}
-
-Logger* Logger::Entry::GetLogger() {
-	return baseLogger;
-}
-
-std::string Logger::Entry::GetOutput() {
-	std::string outMsg = "[" + Logger::levelNames[level] + "] " + (baseLogger->GetName().size() ? ("[" + baseLogger->GetName() + "] ") : "") + text + "\n";
-	if (baseLogger->IsShowingTimestamps()) {
-		outMsg = ghLib::Format("[%.3f] ", (double)(std::chrono::duration_cast<std::chrono::milliseconds>(GetTime().time_since_epoch()).count()) / 1000) + outMsg;
-	}
-	return outMsg;
-}
-
-std::ostream& operator<<(std::ostream& os, Logger::Entry& entry) {
-	os << entry.GetOutput();
-	return os;
 }
 
 std::ostream* Logger::CreateFileLogger(std::string path) {
@@ -90,96 +45,57 @@ Logger* Logger::GetLogger(std::string name /*= ""*/) {
 	return loggers[name];
 }
 
-Logger::Logger(std::string name, Logger* parent /*= nullptr*/) : name(name), parent(parent), verbosity(Level::TRACE), timestamps(true) {
+void Logger::Reset() {
+	entries.clear();
+}
+
+Logger::Logger(std::string name, Logger* parent /*= nullptr*/) : name(name), parent(parent), verbosity(Logger::Level::INHERIT) {
 	auto pref = ghLib::Preferences::GetInstance();
 	std::string key = "logger.log" + (name.size() > 0 ? ("." + name) : "");
 	if (pref->ContainsKey(key)) {
-		auto level = ghLib::Logger::levelMap.find(pref->GetString(key));
-		if (level != ghLib::Logger::levelMap.end()) {
+		auto level = levelMap.find(pref->GetString(key));
+		if (level != levelMap.end()) {
 			verbosity = level->second;
+			printf("Initializing logger \"%s\" at %s (from pref)\n", name.c_str(), levelNames[verbosity].c_str());
 			return;
 		}
 	}
 	if (pref->ContainsKey("logger.default")) {
-		auto level = ghLib::Logger::levelMap.find(pref->GetString("logger.default"));
-		if (level != ghLib::Logger::levelMap.end()) {
+		auto level = levelMap.find(pref->GetString("logger.default"));
+		if (level != levelMap.end()) {
 			verbosity = level->second;
 		}
 	}
+	printf("Initializing logger \"%s\" at %s\n", name.c_str(), levelNames[verbosity].c_str());
 }
 
-void Logger::Log(Level level, std::string msg, Logger* baseLogger /*= nullptr*/) {
+void Logger::Log(Logger::Level level, std::string msg, Logger* baseLogger /*= nullptr*/) {
+	loggingMutex.lock();
+
 	if (baseLogger == nullptr) {
 		baseLogger = this;
 	}
 
-	auto entry = Entry(level, msg, baseLogger); // Always store the entry, despite log level
-	entries.push_back(entry);
+	auto verbosity_ = GetVerbosity();
 
-	if (level < verbosity || level == Level::DISABLED) {
+	if (level < verbosity_ || verbosity_ == Level::DISABLED) {
+		loggingMutex.unlock();
 		return;
 	}
 
-	for (auto& out : outputs) {
-		(*out) << entry << std::flush;
+	auto entry = Entry(level, msg, baseLogger);
+	entries.push_back(entry);
+	int newestID = (int)entries.size() - 1;
+	loggingMutex.unlock();
+
+	for (auto& view : views) {
+		view->Notify(newestID);
 	}
 
-	if (parent) {
-		parent->Log(level, msg, baseLogger);
-	}
-}
-
-std::vector<Logger::Entry> Logger::GetAllEntries() {
-	return entries;
-}
-
-std::vector<Logger::Entry> Logger::GetEntries(int start /* = 0 */, int count /* = -1 */, Logger::Level verbosity_ /* = Level::DISABLED */) {
-	if (count < 0) { // If count < 0, then we want to show the entries up to the end
-		count = (int)entries.size();
-	}
-	if (start < 0) { // If start < 0, we want to start counting back from the most recent entry
-		start = (int)entries.size() - start;
-	}
-	if (verbosity_ == Level::DISABLED) { // If verbosity_ isn't specified, use the one set in the instance
-		verbosity_ = verbosity;
-	}
-
-	std::vector<Logger::Entry> out;
-	for (int i = 0; ((start + i) < (int)entries.size()) && (i < count); i++) {
-		auto entry = entries[start + i];
-		auto level = entry.GetLevel();
-		if (level >= verbosity_ && level != Level::DISABLED) {
-			out.push_back(entry);
-		}
-	}
-	return out;
-}
-
-size_t Logger::Count() {
-	return entries.size();
-}
-
-void Logger::DumpEntries(std::ostream& os, int start /* = 0 */, int count /* = -1 */, Logger::Level verbosity_ /* = Level::DISABLED */) {
-	for (auto &e : GetEntries(start, count, verbosity_)) {
-		os << e;
-	}
-}
-
-std::ostream& operator<<(std::ostream& os, Logger& logger) {
-	logger.DumpEntries(os);
-	return os;
 }
 
 Logger* Logger::GetSubLogger(std::string subName) {
 	return GetLogger((name.size() > 0 ? (name + ".") : "") + subName);
-}
-
-void Logger::ShowTimestamps(bool newValue) {
-	timestamps = newValue;
-}
-
-bool Logger::IsShowingTimestamps() {
-	return timestamps;
 }
 
 std::string Logger::GetName() {
@@ -191,27 +107,18 @@ Logger* Logger::GetParent() {
 }
 
 Logger::Level Logger::GetVerbosity() {
+	if (verbosity == Logger::Level::INHERIT) {
+		if (parent != nullptr) {
+			return parent->GetVerbosity();
+		} else { // We're the root logger, if we don't have anything set, default to TRACE
+			return Level::TRACE;
+		}
+	}
 	return verbosity;
 }
 
 void Logger::SetVerbosity(Logger::Level newLevel) {
 	verbosity = newLevel;
-}
-
-void Logger::AddOutputStream(std::ostream* out) {
-	outputs.push_back(out);
-}
-
-void Logger::AddOutputStream(std::ostream& out) {
-	AddOutputStream(&out);
-}
-
-void Logger::DelOutputStream(std::ostream* out) {
-	outputs.erase(std::remove(outputs.begin(), outputs.end(), out), outputs.end());
-}
-
-void Logger::DelOutputStream(std::ostream& out) {
-	DelOutputStream(&out);
 }
 
 void Logger::Trace(std::string msg) {

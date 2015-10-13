@@ -51,6 +51,7 @@ private:
 	struct per_session_data__logger {
 		std::string inBuf;
 		std::string outBuf;
+		ghLib::Logger::View* view;
 	};
 
 

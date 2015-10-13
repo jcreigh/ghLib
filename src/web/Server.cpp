@@ -112,6 +112,7 @@ void WebServer::Task() {
 		return;
 	}
 	auto prev = std::chrono::steady_clock::now();
+	auto prevPing = std::chrono::steady_clock::now();
 	while (taskRunning.test_and_set()) {
 		libwebsocket_service(context, 50);
 		auto now = std::chrono::steady_clock::now();
@@ -119,9 +120,12 @@ void WebServer::Task() {
 			// Trigger writeable every 50ms
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::PREFERENCES]);
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::TIME]);
-			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::PING]);
 			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::LOGGER]);
 			prev = std::chrono::steady_clock::now();
+		}
+		if (std::chrono::duration_cast<std::chrono::milliseconds>(now - prevPing).count() > 2) {
+			libwebsocket_callback_on_writable_all_protocol(&protocols[Protocols::PING]); // Ping requires replying a lot faster
+			prevPing = std::chrono::steady_clock::now();
 		}
 	}
 	logger->Trace("Destroying libwebsocket context");

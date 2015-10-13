@@ -24,10 +24,12 @@ int WebServer::callback_logger(libwebsocket_context* context, libwebsocket* wsi,
 		case LWS_CALLBACK_ESTABLISHED:
 			*((per_session_data__logger**)user) = new per_session_data__logger();
 			pss = *((per_session_data__logger**)user);
+			pss->view = new ghLib::Logger::View(ghLib::Logger::Level::TRACE);
 			log->Info(ghLib::Format("[%p] Connection established", pss));
 			break;
 		case LWS_CALLBACK_CLOSED:
 			log->Info(ghLib::Format("[%p] Closed", pss));
+			delete pss->view;
 			delete pss;
 			break;
 		case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
@@ -47,18 +49,18 @@ int WebServer::callback_logger(libwebsocket_context* context, libwebsocket* wsi,
 				pss->inBuf = (pss->inBuf).substr(pos + 1);
 				auto tokens = ghLib::Tokenize(buf, ',', '\\');
 				if (tokens[0] == "G") {
-					auto logName = tokens[1];
 					int start = 0;
 					int count = 10;
-					if (tokens.size() > 2) {
-						start = std::stoi(tokens[2]);
-						if (tokens.size() > 3) {
-							count = std::stoi(tokens[3]);
+					if (tokens.size() > 1) {
+						start = tokens[1].size() ? std::stoi(tokens[1]) : start;
+						if (tokens.size() > 2) {
+							count = tokens[2].size() ? std::stoi(tokens[2]) : count;
 						}
 					}
-					log->Debug(ghLib::Format("[%p] Getting %d entries from log \"%s\" starting at %d", pss, count, logName.c_str(), start));
-					auto entries = ghLib::Logger::GetLogger(logName)->GetEntries(start, count);
-					std::string outBuf = ghLib::Format("{\"logName\": \"%s\", \"start\": %d, \"count\": %d, \"entries\": [", logName.c_str(), start, (int)entries.size());
+					log->Debug(ghLib::Format("[%p] Getting %d entries starting at %d", pss, count, start));
+					auto entries = pss->view->GetEntries(start, count);
+					std::string outBuf = ghLib::Format("{\"start\": %d, \"count\": %d, \"entries\": [", start, (int)entries.size());
+
 					for (int i = 0; i < (int)entries.size(); i++) {
 						auto e = entries[i];
 						outBuf += ghLib::Format("{\"level\": \"%s\", \"text\": \"%s\", \"time\": %d, \"logger\": \"%s\"}",
@@ -80,7 +82,7 @@ int WebServer::callback_logger(libwebsocket_context* context, libwebsocket* wsi,
 					auto level = ghLib::Logger::levelMap.find(levelInput);
 					if (level != ghLib::Logger::levelMap.end()) {
 						log->Info(ghLib::Format("Setting log \"%s\" verbosity to %s", logName.c_str(), levelInput.c_str()));
-						ghLib::Logger::GetLogger(logName)->SetVerbosity(level->second);
+						pss->view->SetVerbosity(logName, level->second);
 						pss->outBuf += "OK\n";
 					} else {
 						log->Error(ghLib::Format("Can't set log \"%s\" verbosity. Invalid level: \"%s\"", logName.c_str(), levelInput.c_str()));
