@@ -124,7 +124,7 @@ Button::Button(std::string buttonConfig) {
 	if (!pref->ContainsKey(buttonConfig)) {
 		// TODO: Make ReportError called from a Logger View
 		//ghLib::DriverStation::ReportError("[Button] Attempting to load config '" + buttonConfig + "' and could not find it\n");
-		logger->error(ghLib::Format("[Button] Attempting to load config '" + buttonConfig + "' and could not find it"));
+		logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and could not find it"));
 		type = kInvalid;
 		return;
 	} else {
@@ -142,7 +142,7 @@ Button::Button(std::string buttonConfig) {
 			SetMode(kRaw);
 		} else {
 			//ghLib::DriverStation::ReportError("[Button] Attempting to load config '" + buttonConfig + "' and found an unknown mode '" + modeStr + "'. Defaulting to 'raw'\n");
-			logger->error(ghLib::Format("[Button] Attempting to load config '" + buttonConfig + "' and found an unknown mode '" + modeStr + "'. Defaulting to 'raw'"));
+			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown mode '" + modeStr + "'. Defaulting to 'raw'"));
 			SetMode(kRaw);
 		}
 
@@ -161,7 +161,7 @@ Button::Button(std::string buttonConfig) {
 			otherButton = ButtonRunner::FindButton(pref->GetString((buttonConfig + ".virtual"), ""));
 		} else {
 			//ghLib::DriverStation::ReportError("[Button] Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'\n");
-			logger->error(ghLib::Format("[Button] Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'"));
+			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'"));
 			type = kButton;
 		}
 		std::string loadedBuf = ghLib::Format("Loaded config '%s', stick '%d', type '%s', ", buttonConfig.c_str(), stickNum, typeStr.c_str());

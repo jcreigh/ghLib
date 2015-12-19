@@ -67,8 +67,6 @@ else(ROBOT)
 	add_executable(${PROJECT_TEST_NAME} ${TEST_SRC_FILES})
 	add_dependencies(${PROJECT_TEST_NAME} googletest)
 
-	message("NarfLog Libs Dir: ${NARFLOG_LIBS_DIR}")
-	message("NarfLib Libs Dir: ${NARFLIB_LIBS_DIR}")
 	target_link_libraries(${PROJECT_TEST_NAME}
 			${CMAKE_BINARY_DIR}/lib${PROJECT_NAME}.a
 			${GTEST_LIBS_DIR}/libgtest.a

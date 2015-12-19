@@ -39,7 +39,6 @@ TEST(Button, ComplexConstructor) {
 TEST(Button, RawButton) {
 	auto pref = NetworkTable::GetTable("Preferences");
 	pref->PutNumber("test.buttonRawTest", 5);
-	ghLib::Logger::getLogger("RawButton")->info(ghLib::Format("Moo: %f", pref->GetNumber("test.buttonRawTest")));
 	pref->PutNumber("test.buttonRawTest.js", 2);
 	pref->PutString("test.buttonRawTest.mode", "raw");
 	pref->PutString("test.buttonRawTest.type", "button");

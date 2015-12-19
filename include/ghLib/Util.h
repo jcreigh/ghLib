@@ -46,7 +46,14 @@ U Interpolate(T v, T d_min, T d_max, U r_min, U r_max) {
 	return static_cast<U>((Coerce(v, d_min, d_max) - d_min) * (r_max - r_min) / (d_max - d_min)) + r_min;
 }
 
-double Deadband(double v, double deadband);
+template<class T>
+T Deadband(T v, T deadband) {
+	// If v is within `deadband` of 0, then just return 0.
+	// Else, interpolate |v| from [deadband, 1] into [0, 1] and
+	// make it negative if it was that before
+	return (std::abs(v) < deadband) ? 0 : (std::signbit(v) ? -1 : 1) * Interpolate<T, T>(std::abs(v), deadband, 1.0, 0.0, 1.0);
+}
+
 std::string Format(const std::string fmt_str, ...);
 std::string FilterASCII(const std::string in);
 std::string EscapeString(const std::string in);

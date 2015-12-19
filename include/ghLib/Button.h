@@ -1,6 +1,8 @@
-/*
- * Button.h
- */
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) Creighton 2015. All Rights Reserved.                         */
+/* Open Source Software - May be modified and shared but must                 */
+/* be accompanied by the license file in the root source directory            */
+/*----------------------------------------------------------------------------*/
 
 #ifndef SRC_UTIL_BUTTON_H_
 #define SRC_UTIL_BUTTON_H_
