@@ -7,9 +7,6 @@
 #include "ghLib/Util.h"
 #include "gtest/gtest.h"
 
-#include "networktables/NetworkTable.h"
-extern ITable* testTable;
-
 bool IsWithin(double n, double expected, double tolerance) {
 	return std::abs(n - expected) < tolerance;
 }
@@ -33,7 +30,6 @@ TEST(Util, Interpolate) {
 }
 
 TEST(Util, Deadband) {
-	testTable->PutString("TEST", "hello");
 	ASSERT_EQ((int)(100 * ghLib::Deadband(-2.0, 0.15)), -100);
 	ASSERT_EQ((int)(100 * ghLib::Deadband(-1.0, 0.15)), -100);
 	ASSERT_EQ((int)(100 * ghLib::Deadband(-0.5, 0.15)), -41);

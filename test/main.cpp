@@ -6,58 +6,29 @@
 
 #include <stdio.h>
 #include <string>
+#include "ntcore.h"
+#include "tables/ITableListener.h"
 #include "networktables/NetworkTable.h"
-#include "networktables2/server/NetworkTableServer.h"
 
 #include <gtest/gtest.h>
-#include "ghLib/Preferences.h"
-#include "ghLib/web/Server.h"
 #include "ghLib/Logger.h"
 
-NetworkTableServer* server;
-ITable* testTable;
-
 int main(int argc, char **argv) {
-	NetworkTable::SetServerMode();
-	NetworkTable::Initialize();
+  nt::StartServer("persistent.ini", "", 10000);
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
-	auto log = ghLib::Logger::GetLogger("Debug");
-	log->SetVerbosity(ghLib::Logger::TRACE);
+	auto log = ghLib::Logger::getLogger("Debug");
+	auto view = new ghLib::Logger::View(ghLib::Logger::Level::DISABLED);
+	view->addOutputStream(std::cout);
+	view->setVerbosity("Debug", ghLib::Logger::TRACE);
 
-	testTable = NetworkTable::GetTable("Test");
-
-	class ServerListener : public ITableListener {
-		virtual void ValueChanged(ITable* source, const std::string& key, EntryValue value, bool isNew){
-			fprintf(stdout, "Got key in table: %s = %f\n", key.c_str(), value.f);
-			fflush(stdout);
-		};
-	};
-	auto listener = new ServerListener();
-	testTable->AddTableListener(listener, true);
-
-	log->Info("Initializing tests");
+	log->info("Initializing tests");
 	::testing::InitGoogleTest(&argc, argv);
-	log->Info("Running tests");
 
-	//ghLib::Logger::GetLogger("Button")->AddOutputStream(std::cout);
+	log->info("Running tests");
 	auto res = RUN_ALL_TESTS();
 
-	ghLib::Logger::Reset();
-	auto view = new ghLib::Logger::View(ghLib::Logger::Level::TRACE);
-	view->AddOutputStream(std::cout);
-
-	auto ws = ghLib::web::WebServer::GetInstance();
-	log->Info("Starting wobserver");
-	ws->SetEnabled(true);
-
-	sleep(600);
-	log->Info("Shutting down");
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->Save();
-
-	testTable->RemoveTableListener(listener);
 	NetworkTable::Shutdown();
-	delete listener;
 
-	//return res;
+	return res;
 }

@@ -2,62 +2,58 @@ cmake_minimum_required(VERSION 2.8)
 set(PROJECT_NAME ghLib)
 
 option(ROBOT "Build library for Robot" ON)
+option(WPILIB_DIR "Path to WPI libraries" ~/Robotics/lib)
 
 #set(CMAKE_BUILD_TYPE Debug)
 
 set(EXT_PROJECTS_DIR ${CMAKE_SOURCE_DIR}/ext)
-set(WPI_PATH ${CMAKE_SOURCE_DIR}/ext/wpilib)
 
 if(ROBOT)
-set(CMAKE_TOOLCHAIN_FILE ${WPI_PATH}/arm-toolchain.cmake)
+	set(CMAKE_TOOLCHAIN_FILE ${EXT_PROJECTS_DIR}/arm-toolchain.cmake)
 endif(ROBOT)
 
 project(${PROJECT_NAME})
 
+add_subdirectory(${EXT_PROJECTS_DIR}/narflib narflib)
+add_subdirectory(${EXT_PROJECTS_DIR}/narflog narflog)
+add_subdirectory(${EXT_PROJECTS_DIR}/ntcore ntcore)
+add_subdirectory(${EXT_PROJECTS_DIR}/wpilib)
 
-set(NWT_INCLUDE_DIR ${EXT_PROJECTS_DIR}/wpilib/networktables/cpp/include)
-set(COMMON_INCLUDES ${PROJECT_SOURCE_DIR}/include ${NWT_INCLUDE_DIR})
-
-
-file(GLOB_RECURSE NI_LIBS ${WPI_PATH}/ni-libraries/*.so*)
-list(REMOVE_ITEM NI_LIBS ${WPI_PATH}/ni-libraries/libwpi.so ${WPI_PATH}/ni-libraries/libwpi_2015.so)
-set(WPI_LD_LIBS ${WPI_PATH}/ni-libraries/libwpi.so ${WPI_PATH}/ni-libraries/libwpi_2015.so)
-
-
-get_filename_component(WPILIB_INCLUDES ${WPI_PATH}/wpilibc/wpilibC++/include REALPATH)
-get_filename_component(HAL_API_INCLUDES ${WPI_PATH}/hal/include REALPATH)
-#get_filename_component(NWT_API_INCLUDES ${WPI_PATH}/networktables/cpp/include REALPATH)
-get_filename_component(WPILIB_DEVICES_INCLUDES ${WPI_PATH}/wpilibc/wpilibC++Devices/include REALPATH)
+include_directories(${PROJECT_SOURCE_DIR}/include ${NWT_INCLUDE_DIR}
+	${NARFLOG_INCLUDE_DIR} ${NARFLIB_INCLUDE_DIR} ${LIBWEBSOCKETS_INCLUDE_DIRS})
 
 if(ROBOT)
 	add_definitions(-DROBOT=1)
+
+	file(GLOB_RECURSE NI_LIBS ${WPILIB_DIR}/ni-libraries/*.so*)
+	list(REMOVE_ITEM NI_LIBS ${WPILIB_DIR}/ni-libraries/libwpi.so ${WPILIB_DIR}/ni-libraries/libwpi_2015.so)
+	set(WPILIB_LD_LIBS ${WPILIB_DIR}/ni-libraries/libwpi.so ${WPILIB_DIR}/ni-libraries/libwpi_2015.so)
+
 else(ROBOT)
-	add_definitions(-DGHLIB_PREF_FILENAME="${PROJECT_SOURCE_DIR}/test/prefs.ini")
-	add_definitions(-DGHLIB_LOGGER_BASEPATH="${PROJECT_SOURCE_DIR}/test/")
+	add_definitions(-DNARF_PREF_FILENAME="${PROJECT_SOURCE_DIR}/test/prefs.ini")
+	add_definitions(-DNARF_LOGGER_BASEPATH="${PROJECT_SOURCE_DIR}/test/")
 	add_subdirectory(${EXT_PROJECTS_DIR}/gtest gtest)
-	add_subdirectory(${EXT_PROJECTS_DIR}/wpilib/networktables/cpp networktables)
 endif(ROBOT)
 
-add_subdirectory(${EXT_PROJECTS_DIR}/libwebsockets libwebsockets)
-#add_subdirectory(${EXT_PROJECTS_DIR}/jsoncpp jsoncpp)
-
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++1y")
 
 file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
-
-include_directories(${COMMON_INCLUDES} ${NWT_INCLUDE_DIR} ${LIBWEBSOCKETS_INCLUDE_DIRS})
+add_dependencies(${PROJECT_NAME} ntcore narflib narflog)
 
 if(ROBOT)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -fPIC -L.  -march=armv7-a -mtune=cortex-a9 ")
 	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-rpath,/opt/GenICam_v2_3/bin/Linux_armv7-a,-L.")
 
-	include_directories(${WPILIB_DEVICES_INCLUDES} ${WPILIB_INCLUDES} ${HAL_API_INCLUDES})
+	add_dependencies(${PROJECT_NAME} wpilib)
+	include_directories(${WPILIB_SRC_DIR}/wpilibc/Athena/include)
+	include_directories(${WPILIB_SRC_DIR}/hal/include)
+	include_directories(${WPILIB_SRC_DIR}/hal/lib/Athena/)
+	include_directories(${WPILIB_SRC_DIR}/wpilibc/shared/include)
 
-	set(wpilib_nonshared ${LIBRARY_PATH}/libwpilib_nonshared.a)
-	set(HALAthena ${LIBRARY_PATH}/libHALAthena.a)
-	set(NetworkTables ${LIBRARY_PATH}/libNetworkTables.a)
+	set(wpilib_nonshared ${WPILIB_DIR}/libwpilib_nonshared.a)
+	set(HALAthena ${WPILIB_DIR}/libHALAthena.a)
 
 else(ROBOT)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wpointer-arith -Wtype-limits -Wwrite-strings -Wuninitialized -Werror=redundant-decls -Wsign-compare -Wconversion -g -fno-ident")
@@ -69,15 +65,17 @@ else(ROBOT)
 	file(GLOB TEST_SRC_FILES ${PROJECT_SOURCE_DIR}/test/*.cpp)
 
 	add_executable(${PROJECT_TEST_NAME} ${TEST_SRC_FILES})
-	add_dependencies(${PROJECT_TEST_NAME} googletest NetworkTables)
+	add_dependencies(${PROJECT_TEST_NAME} googletest)
 
+	message("NarfLog Libs Dir: ${NARFLOG_LIBS_DIR}")
+	message("NarfLib Libs Dir: ${NARFLIB_LIBS_DIR}")
 	target_link_libraries(${PROJECT_TEST_NAME}
 			${CMAKE_BINARY_DIR}/lib${PROJECT_NAME}.a
 			${GTEST_LIBS_DIR}/libgtest.a
 			${GTEST_LIBS_DIR}/libgtest_main.a
-			${LIBWEBSOCKETS_LIBS_DIR}/libwebsockets.a
-			${CMAKE_BINARY_DIR}/networktables/libNetworkTables.a
+			${NARFLOG_LIBS_DIR}/libnarflog.a
+			${NARFLIB_LIBS_DIR}/libnarflib.a
+			${NWT_LIBS_DIR}/libntcore.so
 	)
 endif(ROBOT)
 
-#target_link_libraries( ghLib.a ${CMAKE_BINARY_DIR}/networktables/libNetworkTables.a )

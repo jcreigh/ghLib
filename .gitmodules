@@ -1,3 +1,0 @@
-[submodule "ext/wpilib"]
-	path = ext/wpilib
-	url = https://usfirst.collab.net/gerrit/allwpilib

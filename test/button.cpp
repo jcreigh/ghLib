@@ -37,9 +37,10 @@ TEST(Button, ComplexConstructor) {
 
 
 TEST(Button, RawButton) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonRawTest", 5);
-	pref->PutInt("test.buttonRawTest.js", 2);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonRawTest", 5);
+	ghLib::Logger::getLogger("RawButton")->info(ghLib::Format("Moo: %f", pref->GetNumber("test.buttonRawTest")));
+	pref->PutNumber("test.buttonRawTest.js", 2);
 	pref->PutString("test.buttonRawTest.mode", "raw");
 	pref->PutString("test.buttonRawTest.type", "button");
 	auto button = ghLib::Button("test.buttonRawTest");
@@ -52,9 +53,9 @@ TEST(Button, RawButton) {
 }
 
 TEST(Button, ToggleButton) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonToggleTest", 6);
-	pref->PutInt("test.buttonToggleTest.js", 3);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonToggleTest", 6);
+	pref->PutNumber("test.buttonToggleTest.js", 3);
 	pref->PutString("test.buttonToggleTest.mode", "toggle");
 	pref->PutString("test.buttonToggleTest.type", "button");
 	auto button = ghLib::Button("test.buttonToggleTest");
@@ -72,9 +73,9 @@ TEST(Button, ToggleButton) {
 }
 
 TEST(Button, PressButton) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonPressTest", 1);
-	pref->PutInt("test.buttonPressTest.js", 0);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonPressTest", 1);
+	pref->PutNumber("test.buttonPressTest.js", 0);
 	pref->PutString("test.buttonPressTest.mode", "press");
 	pref->PutString("test.buttonPressTest.type", "button");
 	auto button = ghLib::Button("test.buttonPressTest");
@@ -89,9 +90,9 @@ TEST(Button, PressButton) {
 }
 
 TEST(Button, ReleaseButton) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonReleaseTest", 1);
-	pref->PutInt("test.buttonReleaseTest.js", 0);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonReleaseTest", 1);
+	pref->PutNumber("test.buttonReleaseTest.js", 0);
 	pref->PutString("test.buttonReleaseTest.mode", "release");
 	pref->PutString("test.buttonReleaseTest.type", "button");
 	auto button = ghLib::Button("test.buttonReleaseTest");
@@ -107,12 +108,12 @@ TEST(Button, ReleaseButton) {
 
 
 TEST(Button, RawPOV) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonRawPovTest", 3);
-	pref->PutInt("test.buttonRawPovTest.js", 0);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonRawPovTest", 3);
+	pref->PutNumber("test.buttonRawPovTest.js", 0);
 	pref->PutString("test.buttonRawPovTest.mode", "raw");
 	pref->PutString("test.buttonRawPovTest.type", "pov");
-	pref->PutInt("test.buttonRawPovTest.pov", 2);
+	pref->PutNumber("test.buttonRawPovTest.pov", 2);
 	auto button = ghLib::Button("test.buttonRawPovTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
 	ghLib::ButtonRunner::SetEnabled(false);
@@ -126,12 +127,12 @@ TEST(Button, RawPOV) {
 }
 
 TEST(Button, RawAxisPos) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonRawAxisPosTest", 3);
-	pref->PutInt("test.buttonRawAxisPosTest.js", 0);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonRawAxisPosTest", 3);
+	pref->PutNumber("test.buttonRawAxisPosTest.js", 0);
 	pref->PutString("test.buttonRawAxisPosTest.mode", "raw");
 	pref->PutString("test.buttonRawAxisPosTest.type", "axis");
-	pref->PutFloat("test.buttonRawAxisPosTest.threshold", 0.6f);
+	pref->PutNumber("test.buttonRawAxisPosTest.threshold", 0.6f);
 	auto button = ghLib::Button("test.buttonRawAxisPosTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
 	ghLib::ButtonRunner::SetEnabled(false);
@@ -152,12 +153,12 @@ TEST(Button, RawAxisPos) {
 }
 
 TEST(Button, RawAxisNeg) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonRawAxisNegTest", 3);
-	pref->PutInt("test.buttonRawAxisNegTest.js", 0);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonRawAxisNegTest", 3);
+	pref->PutNumber("test.buttonRawAxisNegTest.js", 0);
 	pref->PutString("test.buttonRawAxisNegTest.mode", "raw");
 	pref->PutString("test.buttonRawAxisNegTest.type", "axis");
-	pref->PutFloat("test.buttonRawAxisNegTest.threshold", -0.6f);
+	pref->PutNumber("test.buttonRawAxisNegTest.threshold", -0.6f);
 	auto button = ghLib::Button("test.buttonRawAxisNegTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
 	ghLib::ButtonRunner::SetEnabled(false);
@@ -181,14 +182,14 @@ TEST(Button, RawAxisNeg) {
 
 
 TEST(Button, Virtual) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonVirtualTest", 3);
-	pref->PutInt("test.buttonVirtualTest.js", 0);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonVirtualTest", 3);
+	pref->PutNumber("test.buttonVirtualTest.js", 0);
 	pref->PutString("test.buttonVirtualTest.mode", "press");
 	pref->PutString("test.buttonVirtualTest.type", "virtual");
 	pref->PutString("test.buttonVirtualTest.virtual", "test.otherButton");
-	pref->PutInt("test.otherButton", 4);
-	pref->PutInt("test.otherButton.js", 0);
+	pref->PutNumber("test.otherButton", 4);
+	pref->PutNumber("test.otherButton.js", 0);
 	pref->PutString("test.otherButton.mode", "toggle");
 	pref->PutString("test.otherButton.type", "button");
 	auto other = ghLib::Button("test.otherButton");
@@ -218,8 +219,8 @@ TEST(Button, Virtual) {
 }
 
 TEST(Button, Invert) {
-	auto pref = ghLib::Preferences::GetInstance();
-	pref->PutInt("test.buttonInvertTest", 6);
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.buttonInvertTest", 6);
 	pref->PutBoolean("test.buttonInvertTest.invert", true);
 	auto button = ghLib::Button("test.buttonInvertTest");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
