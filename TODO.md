@@ -7,7 +7,7 @@
 * ~~Use narflib~~
 ---
 ##### Bugs
-* Craziness with missing joysticks
+* ~~Craziness with missing joysticks~~
 ---
 ##### Future
 * Preferences Interface

@@ -195,9 +195,10 @@ Button::~Button() {
 void Button::Update() {
 	bool newValue;
 	if (type == kButton) {
-		//printf("Updating\n");
 		if (buttonChannel > 0 && buttonChannel <= stick->GetButtonCount()) {
 			newValue = stick->GetRawButton(buttonChannel);
+		} else {
+			newValue = false;
 		}
 	} else if (type == kPOV) {
 		// 8 direction POV, each position is 45° from eachother
