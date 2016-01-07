@@ -18,39 +18,62 @@
 
 namespace ghLib {
 
-// C++ templates are some witchcraft
-// https://en.wikipedia.org/wiki/Template_%28C%2B%2B%29#Function_templates
-// They let you define a generic function which operates on type T
-// Below, coerce(-2.0, -1.0, 1.0) operates on floats (well, doubles). When the compiler
-// sees this, it takes the template below and basically replaces all the T's
-// with "double". When it sees coerce(1, 5, 10), it replaces all the T's with "int"
+/**
+ * @fn T Coerce(T v, T r_min, T r_max)
+ * @brief Coerces v into [r_min, r_max]
+ *
+ * if v < r_min, return r_min\n
+ * if v > r_max, return r_max\n
+ * else,         return v\n
+ *
+ * @param v Input value
+ * @param r_min Minimum value
+ * @param r_max Maximum value
+ * @return Coerced result
+ */
 template<class T>
 T Coerce(T v, T r_min, T r_max) {
-	// Coerces v into [r_min, r_max]
-	// i.e. if v < r_min, return r_min
-	//      if v > r_max, return r_max
-	//      else,         return v
 	return std::min(r_max, std::max(r_min, v));
 }
 
-// A bit more complex, using 2 types instead of just one.
+/**
+ * @fn U Interpolate(T v, T d_min, T d_max, U r_min, U r_max)
+ * @brief Coerces `v` into [`d_min`, `d_max`] and then interpolates into [`r_min`, `r_max`]
+ *
+ * https://en.wikipedia.org/wiki/Linear_interpolation\n
+ * \f$\frac{y - y_0}{x - x_0} = \frac{y_1 - y_0}{x_1 - x_0}\f$\n
+ * \f$y = y_0 + (y_1 - y_0) \cdot \frac{x - x_0}{x_1 - x_0}\f$\n
+ * \f$y = r_{min} + (r_{max} - r_{min}) \cdot \frac{v - d_{min}}{d_{max} - d_{min}}\f$\n
+ * \f$y = (v - d_{min}) \cdot \frac{r_{max} - r_{min}}{d_{max} - d_{min}} + r_{min}\f$\n
+ *
+ * @param v Input value
+ * @param d_min Minimum input value
+ * @param d_max Maximum input value
+ * @param r_min Minimum output value
+ * @param r_max Maximum output value
+ * @return Coerced and interpolated result
+ */
 template<class T, class U>
 U Interpolate(T v, T d_min, T d_max, U r_min, U r_max) {
 	// Coerce v into [d_min, d_max]
 	// then linear interpolates into [r_min, r_max]
-	// https://en.wikipedia.org/wiki/Linear_interpolation
-	// (y - y0) / (x - x0) = (y1 - y0) / (x1 - x0)
-	// y = y0 + (y1 - y0) * (x - x0) / (x1 - x0)
-	// y = r_min + (r_max - r_min) * (v - d_min) / (d_max - d_min)
-	// y = (v - d_min) * (r_max - r_min) / (d_max - d_min) + r_min
 	return static_cast<U>((Coerce(v, d_min, d_max) - d_min) * (r_max - r_min) / (d_max - d_min)) + r_min;
 }
 
+/**
+ * @fn T Deadband(T v, T deadband)
+ * @brief Applies a deadband to `v`
+ *
+ * If `v` is within `deadband` of 0, then just return 0.\n
+ * Else, interpolate `|v|` from [`deadband`, 1] into [0, 1] and\n
+ * make it negative if it was that before
+ *
+ * @param v Input value
+ * @param deadband Value under which value will be set to 0
+ * @return `v` with deadband applied
+ */
 template<class T>
 T Deadband(T v, T deadband) {
-	// If v is within `deadband` of 0, then just return 0.
-	// Else, interpolate |v| from [deadband, 1] into [0, 1] and
-	// make it negative if it was that before
 	return (std::abs(v) < deadband) ? 0 : (std::signbit(v) ? -1 : 1) * Interpolate<T, T>(std::abs(v), deadband, 1.0, 0.0, 1.0);
 }
 
