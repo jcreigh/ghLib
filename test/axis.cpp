@@ -63,3 +63,65 @@ TEST(Axis, Invert) {
 	ASSERT_NEAR(0.0f, axis.Get(), 0.001f);
 }
 
+TEST(Axis, Virtual) {
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.virtualTest", 1);
+	pref->PutString("test.virtualTest2", "");
+	pref->PutString("test.virtualTest2.type", "virtual");
+	pref->PutString("test.virtualTest2.virtual", "test.virtualTest");
+	pref->PutBoolean("test.virtualTest2.invert", true);
+	auto stick = ghLib::Joystick::GetStickForPort(0);
+	stick->SetRawAxis(1, 0.75f);
+	auto axis = ghLib::Axis("test.virtualTest");
+	auto axis2 = ghLib::Axis("test.virtualTest2");
+	ASSERT_NEAR(0.75f, axis.Get(), 0.0001f);
+	ASSERT_NEAR(-0.75f, axis2.Get(), 0.0001f);
+
+}
+
+TEST(Axis, Coerce) {
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.coerceTest", 1);
+	pref->PutNumber("test.coerceTest.input.min", 0.1f);
+	pref->PutNumber("test.coerceTest.input.max", 0.6f);
+	auto axis = ghLib::Axis("test.coerceTest");
+	auto stick = ghLib::Joystick::GetStickForPort(0);
+	stick->SetRawAxis(1, -0.1f);
+	ASSERT_NEAR(0.1f, axis.Get(), 0.0001f);
+	stick->SetRawAxis(1, 0.5f);
+	ASSERT_NEAR(0.5f, axis.Get(), 0.0001f);
+	stick->SetRawAxis(1, 0.8f);
+	ASSERT_NEAR(0.6f, axis.Get(), 0.0001f);
+}
+
+TEST(Axis, Interpolate) {
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.interpolateTest", 1);
+	pref->PutNumber("test.interpolateTest.input.min", 0.0f);
+	pref->PutNumber("test.interpolateTest.input.max", 0.5f);
+	pref->PutNumber("test.interpolateTest.output.min", 0.0f);
+	pref->PutNumber("test.interpolateTest.output.max", 4095.0f);
+	pref->PutBoolean("test.interpolateTest.scale", true);
+	auto axis = ghLib::Axis("test.interpolateTest");
+	auto stick = ghLib::Joystick::GetStickForPort(0);
+	stick->SetRawAxis(1, -0.1f);
+	ASSERT_NEAR(0.0f, axis.Get(), 0.0001f);
+	stick->SetRawAxis(1, 0.5f);
+	ASSERT_NEAR(4095.0f, axis.Get(), 0.0001f);
+	stick->SetRawAxis(1, 0.4f);
+	ASSERT_NEAR(3276.0f, axis.Get(), 0.0001f);
+}
+
+TEST(Axis, AnalogInput) {
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.analogTest", 1);
+	pref->PutString("test.analogTest.type", "analog");
+	auto axis = ghLib::Axis("test.analogTest");
+	auto analog = new ghLib::AnalogInput(1);
+	analog->SetValue(4095);
+	ASSERT_NEAR(1.0f, axis.Get(), 0.0001f);
+	analog->SetValue(0);
+	ASSERT_NEAR(-1.0f, axis.Get(), 0.0001f);
+	analog->SetValue(1000);
+	ASSERT_NEAR(-0.51159f, axis.Get(), 0.0001f);
+}

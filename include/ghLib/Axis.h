@@ -10,6 +10,7 @@
 #include <vector>
 #include "ghLib/Joystick.h"
 #include "ghLib/Logger.h"
+#include "ghLib/AnalogInput.h"
 #include "ghLib/Util.h"
 
 #include "networktables/NetworkTable.h"
@@ -22,18 +23,33 @@ class Axis {
 		Axis(int axisChannel, ghLib::Joystick* stick);
 		Axis(std::string axisConfig);
 		~Axis();
+		struct Range { float min, max; };
 		void SetDeadband(float newDeadband);
-		float GetDeadband();
+		float GetDeadband() const;
 		void SetInvert(bool newInvert);
-		bool GetInvert();
-		float Get();
+		bool GetInvert() const;
+		float Get() const;
+		float GetRaw() const;
+		operator float() const;
 	private:
+		enum ChannelType {
+			kAxis, kAnalog, kVirtual, kInvalid
+		};
+		ChannelType type = kAxis;
 		int axisChannel;
 		bool invert = false;
-		float deadband;
+		float deadband = 0.0f;
 		ghLib::Joystick* stick;
+		ghLib::AnalogInput* analog;
 		std::string config;
-
+		Axis* otherAxis;
+		Range input = {-1.0f, 1.0f};
+		Range output = {-1.0f, 1.0f};
+		bool scale = false;  // Use output range
+		bool average = false; // Use average value for analog
+		static Axis* FindAxis(std::string key);
+		static std::vector<Axis*> axes;
+		static std::mutex axesMutex;
 };
 
 }

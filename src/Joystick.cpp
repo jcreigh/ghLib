@@ -12,7 +12,7 @@ namespace ghLib {
 std::unordered_map<int, Joystick*> Joystick::sticks_;
 
 Joystick::Joystick() {
-	SetAxisCount(4);
+	SetAxisCount(6);
 	SetButtonCount(12);
 	SetPOVCount(1);
 }

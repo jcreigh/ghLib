@@ -55,9 +55,7 @@ T Coerce(T v, T r_min, T r_max) {
  */
 template<class T, class U>
 U Interpolate(T v, T d_min, T d_max, U r_min, U r_max) {
-	// Coerce v into [d_min, d_max]
-	// then linear interpolates into [r_min, r_max]
-	return static_cast<U>((Coerce(v, d_min, d_max) - d_min) * (r_max - r_min) / (d_max - d_min)) + r_min;
+	return static_cast<U>(static_cast<U>(Coerce(v, d_min, d_max) - d_min) * (r_max - r_min) / static_cast<U>(d_max - d_min)) + r_min;
 }
 
 /**
