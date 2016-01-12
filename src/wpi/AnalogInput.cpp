@@ -4,7 +4,7 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
-#include "ghLib/AnalogInput.h"
+#include "ghLib/wpi/AnalogInput.h"
 
 #ifndef ROBOT
 namespace ghLib {

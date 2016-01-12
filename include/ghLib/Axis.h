@@ -8,9 +8,8 @@
 #define SRC_GHLIB_AXIS_H_
 
 #include <vector>
-#include "ghLib/Joystick.h"
+#include "ghLib/WPI.h"
 #include "ghLib/Logger.h"
-#include "ghLib/AnalogInput.h"
 #include "ghLib/Util.h"
 
 #include "networktables/NetworkTable.h"

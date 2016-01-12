@@ -12,9 +12,8 @@
 #include <mutex>
 #include <algorithm>
 
-#include "ghLib/Joystick.h"
+#include "ghLib/WPI.h"
 #include "ghLib/Runnable.h"
-#include "ghLib/DriverStation.h"
 #include "ghLib/Logger.h"
 #include "ghLib/Util.h"
 

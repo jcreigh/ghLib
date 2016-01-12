@@ -13,8 +13,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <algorithm>
-#include "ghLib/util/Clock.h"
-#include "ghLib/util/Filesystem.h"
 
 namespace ghLib {
 

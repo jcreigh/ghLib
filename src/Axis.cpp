@@ -1,3 +1,4 @@
+#include "ghLib/WPI.h"
 #include "ghLib/Axis.h"
 
 namespace ghLib {

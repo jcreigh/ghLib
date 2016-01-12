@@ -4,7 +4,7 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
-#include "ghLib/Joystick.h"
+#include "ghLib/wpi/Joystick.h"
 
 #ifndef ROBOT
 namespace ghLib {

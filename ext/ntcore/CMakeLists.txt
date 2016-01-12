@@ -8,6 +8,7 @@ ExternalProject_Add(ntcore
 	           -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 	           -DCMAKE_CXX_FLAGS=${MSVC_COMPILER_DEFS}
 	           -DWITHOUT_JAVA=ON
+	           -DWITHOUT_TESTS=ON
 	PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
 	# Disable install step
 	INSTALL_COMMAND ""

@@ -3,6 +3,9 @@
 /* Open Source Software - May be modified and shared but must                 */
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
+#ifndef SRC_GHLIB_JOYSTICK_H_
+#define SRC_GHLIB_JOYSTICK_H_
+
 #ifdef ROBOT
 
 #include "WPILib.h"
@@ -52,4 +55,6 @@ private:
 
 }
 
-#endif
+#endif /* ROBOT */
+
+#endif /* SRC_GHLIB_JOYSTICK_H_ */
