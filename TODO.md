@@ -1,9 +1,10 @@
 ### TODO
 ---
 ##### Features
-* Add README
 * Allow for expressions for axes, using muParser?
 * Figure out how to enable local testing of actual robot code with ghLib abstractions
+* Make GoogleTest optional when building natively
+* ~~Add README~~
 * ~~Allow for use of button with analog and digital inputs~~
 * ~~Move ghLib abstractions of ghLib classes to own directory~~
 * ~~Allow for use of axis with analog inputs?~~
