@@ -35,32 +35,33 @@ Axis::Axis(std::string axisConfig) {
 	auto logger = ghLib::Logger::getLogger("Axis");
 	config = axisConfig;
 
-	if (!pref->ContainsKey(axisConfig)) {
+	if (!pref->ContainsSubTable(axisConfig)) {
 		logger->error("Attempting to load config '" + axisConfig + "' and could not find it");
 		return;
 	} else {
-		axisChannel = (int)pref->GetNumber(axisConfig, 0);
-		std::string typeStr = pref->GetString((axisConfig + ".type"), "axis");
+		pref = NetworkTable::GetTable("Preferences/" + axisConfig);
+		axisChannel = (int)pref->GetNumber("channel", 0);
+		std::string typeStr = pref->GetString("type", "axis");
 		if (typeStr == "axis") {
-			auto stickNum = (int)pref->GetNumber(axisConfig + ".js", 0); // Default to joystick 0
+			auto stickNum = (int)pref->GetNumber("js", 0); // Default to joystick 0
 			stick = ghLib::Joystick::GetStickForPort(stickNum);
 			type = kAxis;
 		} else if (typeStr == "analog") {
 			analog = new ghLib::AnalogInput(axisChannel);
-			average = pref->GetBoolean(axisConfig + ".analogAverage", false);
+			average = pref->GetBoolean("analogAverage", false);
 			type = kAnalog;
 		} else if (typeStr == "virtual") {
-			otherAxis = FindAxis(pref->GetString(axisConfig + ".virtual", ""));
+			otherAxis = FindAxis(pref->GetString("virtual", ""));
 			type = kVirtual;
 		}
 
-		input.min = (float)pref->GetNumber(axisConfig + ".input.min", -1.0f);
-		input.max = (float)pref->GetNumber(axisConfig + ".input.max", 1.0f);
-		output.min = (float)pref->GetNumber(axisConfig + ".output.min", -1.0f);
-		output.max = (float)pref->GetNumber(axisConfig + ".output.max", 1.0f);
-		scale = pref->GetBoolean(axisConfig + ".scale", false);
-		invert = pref->GetBoolean(axisConfig + ".invert", false);
-		deadband = (float)pref->GetNumber(axisConfig + ".deadband", 0.0f);
+		input.min = (float)pref->GetNumber("input/min", -1.0f);
+		input.max = (float)pref->GetNumber("input/max", 1.0f);
+		output.min = (float)pref->GetNumber("output/min", -1.0f);
+		output.max = (float)pref->GetNumber("output/max", 1.0f);
+		scale = pref->GetBoolean("scale", false);
+		invert = pref->GetBoolean("invert", false);
+		deadband = (float)pref->GetNumber("deadband", 0.0f);
 
 	}
 

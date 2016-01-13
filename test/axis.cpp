@@ -24,11 +24,11 @@ TEST(Axis, ComplexConstructor) {
 
 TEST(Axis, PrefConstructor) {
 	auto pref = NetworkTable::GetTable("Preferences");
-	pref->PutNumber("test.Axis", 5);
-	pref->PutNumber("test.Axis.js", 2);
-	pref->PutNumber("test.Axis.deadband", 0.05f);
-	pref->PutBoolean("test.Axis.invert", true);
-	auto axis = ghLib::Axis("test.Axis");
+	pref->PutNumber("test/Axis/channel", 5);
+	pref->PutNumber("test/Axis/js", 2);
+	pref->PutNumber("test/Axis/deadband", 0.05f);
+	pref->PutBoolean("test/Axis/invert", true);
+	auto axis = ghLib::Axis("test/Axis");
 	auto stick = ghLib::Joystick::GetStickForPort(2);
 	stick->SetRawAxis(5, 0.5f);
 	ASSERT_NEAR(-0.47368419f, axis.Get(), 0.0001f);
@@ -65,15 +65,14 @@ TEST(Axis, Invert) {
 
 TEST(Axis, Virtual) {
 	auto pref = NetworkTable::GetTable("Preferences");
-	pref->PutNumber("test.Virtual.A", 1);
-	pref->PutString("test.Virtual.B", "");
-	pref->PutString("test.Virtual.B.type", "virtual");
-	pref->PutString("test.Virtual.B.virtual", "test.Virtual.A");
-	pref->PutBoolean("test.Virtual.B.invert", true);
+	pref->PutNumber("test/Virtual/A/channel", 1);
+	pref->PutString("test/Virtual/B/type", "virtual");
+	pref->PutString("test/Virtual/B/virtual", "test/Virtual/A");
+	pref->PutBoolean("test/Virtual/B/invert", true);
 	auto stick = ghLib::Joystick::GetStickForPort(0);
 	stick->SetRawAxis(1, 0.75f);
-	auto axis = ghLib::Axis("test.Virtual.A");
-	auto axis2 = ghLib::Axis("test.Virtual.B");
+	auto axis = ghLib::Axis("test/Virtual/A");
+	auto axis2 = ghLib::Axis("test/Virtual/B");
 	ASSERT_NEAR(0.75f, axis.Get(), 0.0001f);
 	ASSERT_NEAR(-0.75f, axis2.Get(), 0.0001f);
 
@@ -81,10 +80,10 @@ TEST(Axis, Virtual) {
 
 TEST(Axis, Coerce) {
 	auto pref = NetworkTable::GetTable("Preferences");
-	pref->PutNumber("test.Coerce", 1);
-	pref->PutNumber("test.Coerce.input.min", 0.1f);
-	pref->PutNumber("test.Coerce.input.max", 0.6f);
-	auto axis = ghLib::Axis("test.Coerce");
+	pref->PutNumber("test/Coerce/channel", 1);
+	pref->PutNumber("test/Coerce/input/min", 0.1f);
+	pref->PutNumber("test/Coerce/input/max", 0.6f);
+	auto axis = ghLib::Axis("test/Coerce");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
 	stick->SetRawAxis(1, -0.1f);
 	ASSERT_NEAR(0.1f, axis.Get(), 0.0001f);
@@ -96,13 +95,13 @@ TEST(Axis, Coerce) {
 
 TEST(Axis, Interpolate) {
 	auto pref = NetworkTable::GetTable("Preferences");
-	pref->PutNumber("test.Interpolate", 1);
-	pref->PutNumber("test.Interpolate.input.min", 0.0f);
-	pref->PutNumber("test.Interpolate.input.max", 0.5f);
-	pref->PutNumber("test.Interpolate.output.min", 0.0f);
-	pref->PutNumber("test.Interpolate.output.max", 4095.0f);
-	pref->PutBoolean("test.Interpolate.scale", true);
-	auto axis = ghLib::Axis("test.Interpolate");
+	pref->PutNumber("test/Interpolate/channel", 1);
+	pref->PutNumber("test/Interpolate/input/min", 0.0f);
+	pref->PutNumber("test/Interpolate/input/max", 0.5f);
+	pref->PutNumber("test/Interpolate/output/min", 0.0f);
+	pref->PutNumber("test/Interpolate/output/max", 4095.0f);
+	pref->PutBoolean("test/Interpolate/scale", true);
+	auto axis = ghLib::Axis("test/Interpolate");
 	auto stick = ghLib::Joystick::GetStickForPort(0);
 	stick->SetRawAxis(1, -0.1f);
 	ASSERT_NEAR(0.0f, axis.Get(), 0.0001f);
@@ -114,9 +113,9 @@ TEST(Axis, Interpolate) {
 
 TEST(Axis, AnalogInput) {
 	auto pref = NetworkTable::GetTable("Preferences");
-	pref->PutNumber("test.Analog", 1);
-	pref->PutString("test.Analog.type", "analog");
-	auto axis = ghLib::Axis("test.Analog");
+	pref->PutNumber("test/Analog/channel", 1);
+	pref->PutString("test/Analog/type", "analog");
+	auto axis = ghLib::Axis("test/Analog");
 	auto analog = new ghLib::AnalogInput(1);
 	analog->SetValue(4095);
 	ASSERT_NEAR(1.0f, axis.Get(), 0.0001f);
