@@ -231,3 +231,45 @@ TEST(Button, Invert) {
 	stick->SetRawButton(6, false);
 }
 
+TEST(Button, VirtualAxis) {
+	auto pref = NetworkTable::GetTable("Preferences");
+
+	pref->PutNumber("test.Button.VirtualAxis.axis", 0);
+	auto axis = ghLib::Axis("test.Button.VirtualAxis.axis");
+
+	pref->PutNumber("test.Button.VirtualAxis.button", 0);
+	pref->PutString("test.Button.VirtualAxis.button.type", "virtual");
+	pref->PutNumber("test.Button.VirtualAxis.button.threshold", 0.6f);
+	pref->PutString("test.Button.VirtualAxis.button.virtual", "test.Button.VirtualAxis.axis");
+	auto button = ghLib::Button("test.Button.VirtualAxis.button");
+
+	auto stick = ghLib::Joystick::GetStickForPort(0);
+	ghLib::ButtonRunner::SetEnabled(false);
+	stick->SetRawAxis(0, 0.0f); button.Update();
+	ASSERT_FALSE(button.Get());
+	stick->SetRawAxis(0, 0.8f); button.Update();
+	ASSERT_TRUE(button.Get());
+	stick->SetRawAxis(0, -0.8f); button.Update();
+	ASSERT_FALSE(button.Get());
+	stick->SetRawAxis(0, 0.5f); button.Update();
+	ASSERT_FALSE(button.Get());
+	stick->SetRawAxis(0, 1.0f); button.Update();
+	ASSERT_TRUE(button.Get());
+}
+
+TEST(Button, AnalogInput) {
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.Button.analog", 1);
+	pref->PutString("test.Button.analog.type", "analog");
+	pref->PutNumber("test.Button.analog.threshold", 0.6f);
+	auto button = ghLib::Button("test.Button.analog");
+	auto analog = new ghLib::AnalogInput(1);
+	analog->SetValue(4095); button.Update();
+	ASSERT_TRUE(button.Get());
+	analog->SetValue(3000); button.Update();
+	ASSERT_FALSE(button.Get());
+	analog->SetValue(0); button.Update();
+	ASSERT_FALSE(button.Get());
+	analog->SetValue(3500); button.Update();
+	ASSERT_TRUE(button.Get());
+}

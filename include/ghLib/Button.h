@@ -16,6 +16,7 @@
 #include "ghLib/Runnable.h"
 #include "ghLib/Logger.h"
 #include "ghLib/Util.h"
+#include "ghLib/Axis.h"
 
 #include "networktables/NetworkTable.h"
 
@@ -56,7 +57,7 @@ class Button {
 		bool Get(bool reset = true);
 	private:
 		enum ChannelType {
-			kButton, kPOV, kAxis, kVirtual, kInvalid
+			kButton, kPOV, kAxis, kVirtual, kDigital, kAnalog, kInvalid
 		};
 		bool value = false;
 		bool lastValue = false;
@@ -68,6 +69,9 @@ class Button {
 		ghLib::Joystick* stick;
 		Mode mode = kRaw;
 		Button* otherButton = nullptr;
+		Axis* otherAxis = nullptr;
+		AnalogInput* analog = nullptr;
+		bool average = false;
 };
 
 }

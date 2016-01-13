@@ -141,7 +141,6 @@ Button::Button(std::string buttonConfig) {
 		} else if (modeStr == "raw") {
 			SetMode(kRaw);
 		} else {
-			//ghLib::DriverStation::ReportError("[Button] Attempting to load config '" + buttonConfig + "' and found an unknown mode '" + modeStr + "'. Defaulting to 'raw'\n");
 			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown mode '" + modeStr + "'. Defaulting to 'raw'"));
 			SetMode(kRaw);
 		}
@@ -154,13 +153,19 @@ Button::Button(std::string buttonConfig) {
 			povIndex = (int)pref->GetNumber((buttonConfig + ".pov"), 0);
 		} else if (typeStr == "axis") {
 			type = kAxis;
-			threshold = (float)pref->GetNumber((buttonConfig + ".threshold"), 0.95f);
 		} else if (typeStr == "virtual") {
 			type = kVirtual;
-			// TODO: Error if can't find button?
-			otherButton = ButtonRunner::FindButton(pref->GetString((buttonConfig + ".virtual"), ""));
+			auto virtualStr = pref->GetString((buttonConfig + ".virtual"), "");
+			// Search for a Button first, then an Axis if not found.
+			otherButton = ButtonRunner::FindButton(virtualStr);
+			if (otherButton == nullptr) {
+				otherAxis = Axis::FindAxis(virtualStr);
+			}
+		} else if (typeStr == "analog") {
+			type = kAnalog;
+			analog = new ghLib::AnalogInput(buttonChannel);
+			average = pref->GetBoolean(buttonConfig + ".analogAverage", false);
 		} else {
-			//ghLib::DriverStation::ReportError("[Button] Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'\n");
 			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'"));
 			type = kButton;
 		}
@@ -168,10 +173,11 @@ Button::Button(std::string buttonConfig) {
 
 		if (type == kPOV) {
 			loadedBuf += ghLib::Format("povIndex '%d', ", povIndex);
-		} else if (type == kAxis){
+		} else if (type == kAxis || type == kAnalog || otherAxis != nullptr){
+			threshold = (float)pref->GetNumber((buttonConfig + ".threshold"), 0.95f);
 			loadedBuf += ghLib::Format("threshold '%.2f', ", threshold);
 		} else if (type == kVirtual) {
-			loadedBuf += ghLib::Format("otherButton '%s', ", pref->GetString((buttonConfig + ".virtual"), "").c_str());
+			loadedBuf += ghLib::Format("otherButton/Axis '%s', ", pref->GetString((buttonConfig + ".virtual"), "").c_str());
 		}
 		invert = pref->GetBoolean((buttonConfig + ".invert"), false);
 
@@ -194,6 +200,7 @@ Button::~Button() {
  */
 void Button::Update() {
 	bool newValue;
+	auto logger = ghLib::Logger::getLogger("Button");
 	if (type == kButton) {
 		if (buttonChannel > 0 && buttonChannel <= stick->GetButtonCount()) {
 			newValue = stick->GetRawButton(buttonChannel);
@@ -210,15 +217,23 @@ void Button::Update() {
 		if (buttonChannel >= 0 && buttonChannel < stick->GetAxisCount()) {
 			axisValue = stick->GetRawAxis(buttonChannel);
 		}
-		if (threshold < 0) {
-			newValue = axisValue < threshold;
-		} else if (threshold > 0) {
-			newValue = axisValue > threshold;
+		newValue = AboveThreshold(axisValue, threshold);
+		logger->trace(ghLib::Format("[%p] axis = %0.2f, threshold = %0.2f, value = %s",
+									this, axisValue, threshold, newValue ? "true" : "false"));
+	} else if (type == kVirtual) {
+		if (otherButton != nullptr) {
+			newValue = otherButton->Get();
+			logger->trace(ghLib::Format("[%p] otherButton (%p) = %0.2f", this, otherButton, newValue));
 		} else {
-			newValue = false;
+			newValue = AboveThreshold(otherAxis->Get(), threshold);
+			logger->trace(ghLib::Format("[%p] otherAxis (%p) = %0.2f, threshold = %0.2f, value = %s",
+			              this, otherAxis, (float)*otherAxis, threshold, newValue ? "true" : "false"));
 		}
-	} else if (type == kVirtual && otherButton != nullptr) {
-		newValue = otherButton->Get();
+	} else if (type == kAnalog) {
+			auto axisValue = ghLib::Interpolate(average ? analog->GetAverageValue() : analog->GetValue(), 0, 4095, -1.0f, 1.0f);
+			newValue = AboveThreshold(axisValue, threshold);
+			logger->trace(ghLib::Format("[%p] analog (%p) = %0.2f, threshold = %0.2f, value = %s",
+			        this, analog, axisValue, threshold, newValue ? "true" : "false"));
 	} else {
 		newValue = false;
 	}

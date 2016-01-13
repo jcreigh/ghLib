@@ -79,6 +79,16 @@ std::string EscapeString(const std::string in);
 std::vector<std::string>& Tokenize(const std::string &input, char delimeter, std::vector<std::string>& tokens, char escape = '\0');
 std::vector<std::string> Tokenize(const std::string &input, char delimeter, char escape = '\0');
 
+template<class T>
+bool AboveThreshold(T value, T threshold) {
+	if (threshold < 0) {
+		return value < threshold;
+	} else if (threshold > 0) {
+		return value > threshold;
+	}
+	return false;
+}
+
 }
 
 #endif /* GHLIB_UTIL_H_ */

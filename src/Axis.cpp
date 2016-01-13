@@ -47,7 +47,7 @@ Axis::Axis(std::string axisConfig) {
 			type = kAxis;
 		} else if (typeStr == "analog") {
 			analog = new ghLib::AnalogInput(axisChannel);
-			average = pref->GetBoolean(axisConfig + ".average", false);
+			average = pref->GetBoolean(axisConfig + ".analogAverage", false);
 			type = kAnalog;
 		} else if (typeStr == "virtual") {
 			otherAxis = FindAxis(pref->GetString(axisConfig + ".virtual", ""));
@@ -73,6 +73,9 @@ Axis::Axis(std::string axisConfig) {
  * Deconstructor for a Axis
  */
 Axis::~Axis() {
+	axesMutex.lock();
+	axes.erase(std::remove(axes.begin(), axes.end(), this), axes.end());
+	axesMutex.unlock();
 }
 
 /**

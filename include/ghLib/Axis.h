@@ -30,6 +30,7 @@ class Axis {
 		float Get() const;
 		float GetRaw() const;
 		operator float() const;
+		static Axis* FindAxis(std::string key);
 	private:
 		enum ChannelType {
 			kAxis, kAnalog, kVirtual, kInvalid
@@ -46,7 +47,6 @@ class Axis {
 		Range output = {-1.0f, 1.0f};
 		bool scale = false;  // Use output range
 		bool average = false; // Use average value for analog
-		static Axis* FindAxis(std::string key);
 		static std::vector<Axis*> axes;
 		static std::mutex axesMutex;
 };
