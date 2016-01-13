@@ -71,6 +71,7 @@ class Button {
 		Button* otherButton = nullptr;
 		Axis* otherAxis = nullptr;
 		AnalogInput* analog = nullptr;
+		DigitalInput* digital = nullptr;
 		bool average = false;
 };
 

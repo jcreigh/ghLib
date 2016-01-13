@@ -273,3 +273,17 @@ TEST(Button, AnalogInput) {
 	analog->SetValue(3500); button.Update();
 	ASSERT_TRUE(button.Get());
 }
+
+TEST(Button, DigitalInput) {
+	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutNumber("test.Button.digital", 1);
+	pref->PutString("test.Button.digital.type", "digital");
+	auto button = ghLib::Button("test.Button.digital");
+	auto digital = new ghLib::DigitalInput(1);
+	digital->Set(false); button.Update();
+	ASSERT_FALSE(button.Get());
+	digital->Set(true); button.Update();
+	ASSERT_TRUE(button.Get());
+	digital->Set(false); button.Update();
+	ASSERT_FALSE(button.Get());
+}

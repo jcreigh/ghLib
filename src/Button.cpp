@@ -165,6 +165,9 @@ Button::Button(std::string buttonConfig) {
 			type = kAnalog;
 			analog = new ghLib::AnalogInput(buttonChannel);
 			average = pref->GetBoolean(buttonConfig + ".analogAverage", false);
+		} else if (typeStr == "digital") {
+			type = kDigital;
+			digital = new ghLib::DigitalInput(buttonChannel);
 		} else {
 			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'"));
 			type = kButton;
@@ -234,6 +237,8 @@ void Button::Update() {
 			newValue = AboveThreshold(axisValue, threshold);
 			logger->trace(ghLib::Format("[%p] analog (%p) = %0.2f, threshold = %0.2f, value = %s",
 			        this, analog, axisValue, threshold, newValue ? "true" : "false"));
+	} else if (type == kDigital) {
+		newValue = digital->Get();
 	} else {
 		newValue = false;
 	}
