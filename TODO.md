@@ -3,9 +3,9 @@
 ##### Features
 * Add README
 * Allow for expressions for axes, using muParser?
-* Allow for use of button with analog and digital inputs
-* Move ghLib abstractions of ghLib classes to own directory
 * Figure out how to enable local testing of actual robot code with ghLib abstractions
+* ~~Allow for use of button with analog and digital inputs~~
+* ~~Move ghLib abstractions of ghLib classes to own directory~~
 * ~~Allow for use of axis with analog inputs?~~
 * ~~Programmatically set default for specific logs~~
 * ~~Use narflib~~

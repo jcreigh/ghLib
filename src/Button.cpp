@@ -227,10 +227,12 @@ void Button::Update() {
 		if (otherButton != nullptr) {
 			newValue = otherButton->Get();
 			logger->trace(ghLib::Format("[%p] otherButton (%p) = %0.2f", this, otherButton, newValue));
-		} else {
+		} else if (otherAxis != nullptr){
 			newValue = AboveThreshold(otherAxis->Get(), threshold);
 			logger->trace(ghLib::Format("[%p] otherAxis (%p) = %0.2f, threshold = %0.2f, value = %s",
 			              this, otherAxis, (float)*otherAxis, threshold, newValue ? "true" : "false"));
+		} else {
+			newValue = false;
 		}
 	} else if (type == kAnalog) {
 			auto axisValue = ghLib::Interpolate(average ? analog->GetAverageValue() : analog->GetValue(), 0, 4095, -1.0f, 1.0f);
