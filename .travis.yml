@@ -1,0 +1,17 @@
+language: cpp
+
+compiler:
+    - gcc
+
+os:
+    - linux
+
+script:
+    - mkdir build
+    - cd build
+    - cmake .. -DROBOT=OFF
+    - make VERBOSE=1
+    - ./ghLib_test
+
+before_install:
+    - "if [ $(uname) = Linux ]; then sudo travis/setup-linux.sh; fi"
