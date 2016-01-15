@@ -4,9 +4,9 @@
 namespace ghLib {
 
 ButtonRunner *ButtonRunner::instance = nullptr;
-std::vector<Button*> ButtonRunner::buttons;
 std::atomic_flag ButtonRunner::taskRunning = ATOMIC_FLAG_INIT;
-std::mutex ButtonRunner::buttonsMutex;
+std::vector<Button*> Button::buttons;
+std::mutex Button::buttonsMutex;
 
 ButtonRunner::ButtonRunner() {
 }
@@ -17,11 +17,11 @@ ButtonRunner::ButtonRunner() {
 void ButtonRunner::Task() {
 	while (taskRunning.test_and_set()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(20));
-		buttonsMutex.lock();
-		for (auto button : buttons) {
+		Button::buttonsMutex.lock();
+		for (auto button : Button::buttons) {
 			button->Update();
 		}
-		buttonsMutex.unlock();
+		Button::buttonsMutex.unlock();
 	}
 }
 
@@ -52,36 +52,34 @@ void ButtonRunner::SetEnabled(bool enabled) { // Enable or disable the ButtonChe
 }
 
 /**
- * Add a Button to be checked by the ButtonChecker Task
- * @param buttonPtr Pointer to a Button
- */
-void ButtonRunner::AddButton(Button* buttonPtr) {
-	buttonsMutex.lock();
-	buttons.push_back(buttonPtr); // Add new button
-	buttonsMutex.unlock();
-}
-
-/**
- * Remove a Button to being checked by the ButtonChecker Task
- * @param buttonPtr Pointer to a Button
- */
-void ButtonRunner::DelButton(Button* buttonPtr) {
-	buttonsMutex.lock();
-	buttons.erase(std::remove(buttons.begin(), buttons.end(), buttonPtr), buttons.end());
-	buttonsMutex.unlock();
-}
-
-/**
  * Search for a Button by key
  * @param key Configuration key to search by
  */
-Button* ButtonRunner::FindButton(std::string key) {
+Button* Button::FromConfig(std::string key, bool createNotFound /* = true*/) {
 	for (auto button : buttons) {
 		if (button->config == key) {
 			return button;
 		}
 	}
-	return nullptr;
+	Button* button = nullptr;
+	if (createNotFound) {
+		button = new Button(key);
+		if (button->type == kInvalid) {
+			delete button;
+			return nullptr;
+		}
+	}
+	return button;
+}
+
+/**
+ * Add a Button to be checked by the ButtonChecker Task
+ * @param buttonPtr Pointer to a Button
+ */
+void Button::AddButton(Button* buttonPtr) {
+	buttonsMutex.lock();
+	buttons.push_back(buttonPtr); // Add new button
+	buttonsMutex.unlock();
 }
 
 /**
@@ -91,7 +89,7 @@ Button* ButtonRunner::FindButton(std::string key) {
  */
 Button::Button(int buttonChannel, Mode mode /* = Button::kRaw */) : buttonChannel(buttonChannel), mode(mode) {
 	stick = ghLib::Joystick::GetStickForPort(0);
-	ButtonRunner::AddButton(this);
+	AddButton(this);
 }
 
 /**
@@ -101,7 +99,7 @@ Button::Button(int buttonChannel, Mode mode /* = Button::kRaw */) : buttonChanne
  * @param mode The mode for the button (Default: kRaw)
  */
 Button::Button(int buttonChannel, ghLib::Joystick* stick, Mode mode /* = Button::kRaw */) : buttonChannel(buttonChannel), stick(stick), mode(mode) {
-	ButtonRunner::AddButton(this);
+	AddButton(this);
 }
 
 /**
@@ -156,9 +154,14 @@ Button::Button(std::string buttonConfig) {
 			type = kVirtual;
 			auto virtualStr = pref->GetString("virtual", "");
 			// Search for a Button first, then an Axis if not found.
-			otherButton = ButtonRunner::FindButton(virtualStr);
+			otherButton = Button::FromConfig(virtualStr, false);
 			if (otherButton == nullptr) {
-				otherAxis = Axis::FindAxis(virtualStr);
+				otherAxis = Axis::FromConfig(virtualStr);
+			}
+			if (otherButton == nullptr && otherAxis == nullptr) {
+				type = kInvalid;
+				logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and could note find virtual '" + virtualStr + "'"));
+				return;
 			}
 		} else if (typeStr == "analog") {
 			type = kAnalog;
@@ -171,7 +174,7 @@ Button::Button(std::string buttonConfig) {
 			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'"));
 			type = kButton;
 		}
-		std::string loadedBuf = ghLib::Format("Loaded config '%s', stick '%d', type '%s', ", buttonConfig.c_str(), stickNum, typeStr.c_str());
+		std::string loadedBuf = ghLib::Format("[%p] Loaded config '%s', stick '%d', type '%s', ", this, buttonConfig.c_str(), stickNum, typeStr.c_str());
 
 		if (type == kPOV) {
 			loadedBuf += ghLib::Format("povIndex '%d', ", povIndex);
@@ -179,7 +182,11 @@ Button::Button(std::string buttonConfig) {
 			threshold = (float)pref->GetNumber("threshold", 0.95f);
 			loadedBuf += ghLib::Format("threshold '%.2f', ", threshold);
 		} else if (type == kVirtual) {
-			loadedBuf += ghLib::Format("otherButton/Axis '%s', ", pref->GetString("virtual", "").c_str());
+			if (otherButton) {
+				loadedBuf += ghLib::Format("otherButton '%s' '%p', ", pref->GetString("virtual", "").c_str(), otherButton);
+			} else if (otherAxis) {
+				loadedBuf += ghLib::Format("otherAxis '%s' '%p', ", pref->GetString("virtual", "").c_str(), otherButton);
+			}
 		}
 		invert = pref->GetBoolean("invert", false);
 
@@ -187,14 +194,16 @@ Button::Button(std::string buttonConfig) {
 		logger->info(loadedBuf);
 
 	}
-	ButtonRunner::AddButton(this);
+	AddButton(this);
 }
 
 /**
  * Deconstructor for a Button
  */
 Button::~Button() {
-	ButtonRunner::DelButton(this);
+	buttonsMutex.lock();
+	buttons.erase(std::remove(buttons.begin(), buttons.end(), this), buttons.end());
+	buttonsMutex.unlock();
 }
 
 /**
@@ -220,24 +229,24 @@ void Button::Update() {
 			axisValue = stick->GetRawAxis(buttonChannel);
 		}
 		newValue = AboveThreshold(axisValue, threshold);
-		logger->trace(ghLib::Format("[%p] axis = %0.2f, threshold = %0.2f, value = %s",
-									this, axisValue, threshold, newValue ? "true" : "false"));
+		logger->trace(ghLib::Format("[:%d] [%p] axis = %0.2f, threshold = %0.2f, value = %s",
+		                __LINE__, this, axisValue, threshold, newValue ? "true" : "false"));
 	} else if (type == kVirtual) {
 		if (otherButton != nullptr) {
 			newValue = otherButton->Get();
-			logger->trace(ghLib::Format("[%p] otherButton (%p) = %0.2f", this, otherButton, newValue));
+			logger->trace(ghLib::Format("[:%d] [%p] otherButton (%p) = %0.2f", __LINE__, this, otherButton, newValue));
 		} else if (otherAxis != nullptr){
 			newValue = AboveThreshold(otherAxis->Get(), threshold);
-			logger->trace(ghLib::Format("[%p] otherAxis (%p) = %0.2f, threshold = %0.2f, value = %s",
-			              this, otherAxis, (float)*otherAxis, threshold, newValue ? "true" : "false"));
+			logger->trace(ghLib::Format("[:%d] [%p] otherAxis (%p) = %0.2f, threshold = %0.2f, value = %s",
+			              __LINE__, this, otherAxis, (float)*otherAxis, threshold, newValue ? "true" : "false"));
 		} else {
 			newValue = false;
 		}
 	} else if (type == kAnalog) {
 			auto axisValue = ghLib::Interpolate(average ? analog->GetAverageValue() : analog->GetValue(), 0, 4095, -1.0f, 1.0f);
 			newValue = AboveThreshold(axisValue, threshold);
-			logger->trace(ghLib::Format("[%p] analog (%p) = %0.2f, threshold = %0.2f, value = %s",
-			        this, analog, axisValue, threshold, newValue ? "true" : "false"));
+			logger->trace(ghLib::Format("[:%d] [%p] analog (%p) = %0.2f, threshold = %0.2f, value = %s",
+			              __LINE__, this, analog, axisValue, threshold, newValue ? "true" : "false"));
 	} else if (type == kDigital) {
 		newValue = digital->Get();
 	} else {

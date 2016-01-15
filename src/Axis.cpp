@@ -37,6 +37,7 @@ Axis::Axis(std::string axisConfig) {
 
 	if (!pref->ContainsSubTable(axisConfig)) {
 		logger->error("Attempting to load config '" + axisConfig + "' and could not find it");
+		type = kInvalid;
 		return;
 	} else {
 		pref = NetworkTable::GetTable("Preferences/" + axisConfig);
@@ -51,7 +52,7 @@ Axis::Axis(std::string axisConfig) {
 			average = pref->GetBoolean("analogAverage", false);
 			type = kAnalog;
 		} else if (typeStr == "virtual") {
-			otherAxis = FindAxis(pref->GetString("virtual", ""));
+			otherAxis = FromConfig(pref->GetString("virtual", ""), false);
 			type = kVirtual;
 		}
 
@@ -83,13 +84,21 @@ Axis::~Axis() {
  * Search for an Axis by key
  * @param key Configuration key to search by
  */
-Axis* Axis::FindAxis(std::string key) {
+Axis* Axis::FromConfig(std::string key, bool createNotFound /* = true*/) {
 	for (auto axis : axes) {
 		if (axis->config == key) {
 			return axis;
 		}
 	}
-	return nullptr;
+	Axis* axis = nullptr;
+	if (createNotFound) {
+		axis = new Axis(key);
+		if (axis->type == kInvalid) {
+			delete axis;
+			return nullptr;
+		}
+	}
+	return axis;
 }
 
 void Axis::SetDeadband(float newDeadband) {

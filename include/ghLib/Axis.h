@@ -30,7 +30,7 @@ class Axis {
 		float Get() const;
 		float GetRaw() const;
 		operator float() const;
-		static Axis* FindAxis(std::string key);
+		static Axis* FromConfig(std::string key, bool createNotFound = true);
 	private:
 		enum ChannelType {
 			kAxis, kAnalog, kVirtual, kInvalid

@@ -3,6 +3,7 @@
 ##### Features
 * Allow for expressions for axes, using muParser?
 * Figure out how to enable local testing of actual robot code with ghLib abstractions
+* Change type to src, make type specify the type of structure instead
 * ~~Add Travis CI~~
 * ~~Add README~~
 * ~~Allow for use of button with analog and digital inputs~~

@@ -30,18 +30,14 @@ class ButtonRunner : public ghLib::Runnable {
 		void Task();
 		static ButtonRunner* GetInstance();
 		static void SetEnabled(bool enabled);
-		static void AddButton(Button* buttonPtr);
-		static void DelButton(Button* buttonPtr);
-		static Button* FindButton(std::string key);
 	private:
 		ButtonRunner();
 		static ButtonRunner* instance;
-		static std::vector<Button*> buttons;
 		static std::atomic_flag taskRunning;
-		static std::mutex buttonsMutex;
 };
 
 class Button {
+	friend class ButtonRunner;
 	public:
 		std::string config;
 		enum Mode {
@@ -55,6 +51,8 @@ class Button {
 		void SetMode(Mode newMode);
 		bool IsPressed();
 		bool Get(bool reset = true);
+		static Button* FromConfig(std::string key, bool createNotFound = true);
+
 	private:
 		enum ChannelType {
 			kButton, kPOV, kAxis, kVirtual, kDigital, kAnalog, kInvalid
@@ -73,6 +71,9 @@ class Button {
 		AnalogInput* analog = nullptr;
 		DigitalInput* digital = nullptr;
 		bool average = false;
+		static std::vector<Button*> buttons;
+		static std::mutex buttonsMutex;
+		static void AddButton(Button* buttonPtr);
 };
 
 }
