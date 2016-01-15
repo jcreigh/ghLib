@@ -37,23 +37,34 @@ Axis::Axis(std::string axisConfig) {
 
 	if (!pref->ContainsSubTable(axisConfig)) {
 		logger->error("Attempting to load config '" + axisConfig + "' and could not find it");
-		type = kInvalid;
+		src = kInvalid;
 		return;
 	} else {
 		pref = NetworkTable::GetTable("Preferences/" + axisConfig);
+		auto type = pref->GetString("type", "");
+		if (type != "axis") {
+			logger->error(ghLib::Format("Attempting to load config '" + axisConfig + "' and found unexpected type '" + type + "'"));
+			src = kInvalid;
+			return;
+		}
 		axisChannel = (int)pref->GetNumber("channel", 0);
-		std::string typeStr = pref->GetString("type", "axis");
-		if (typeStr == "axis") {
-			auto stickNum = (int)pref->GetNumber("js", 0); // Default to joystick 0
+		std::string srcStr = pref->GetString("src", "axis");
+		auto stickNum = (int)pref->GetNumber("js", 0); // Default to joystick 0
+		if (srcStr == "axis") {
 			stick = ghLib::Joystick::GetStickForPort(stickNum);
-			type = kAxis;
-		} else if (typeStr == "analog") {
+			src = kAxis;
+		} else if (srcStr == "analog") {
 			analog = new ghLib::AnalogInput(axisChannel);
 			average = pref->GetBoolean("analogAverage", false);
-			type = kAnalog;
-		} else if (typeStr == "virtual") {
-			otherAxis = FromConfig(pref->GetString("virtual", ""), false);
-			type = kVirtual;
+			src = kAnalog;
+		} else if (srcStr == "virtual") {
+			auto otherAxisStr = pref->GetString("virtual", "");
+			if (NetworkTable::GetTable("Preferences")->GetString(otherAxisStr + "/type", "") == "axis") {
+				otherAxis = FromConfig(otherAxisStr);
+				src = kVirtual;
+			} else {
+				src = kInvalid;
+			}
 		}
 
 		input.min = (float)pref->GetNumber("input/min", -1.0f);
@@ -63,6 +74,24 @@ Axis::Axis(std::string axisConfig) {
 		scale = pref->GetBoolean("scale", false);
 		invert = pref->GetBoolean("invert", false);
 		deadband = (float)pref->GetNumber("deadband", 0.0f);
+
+		std::string loadedBuf = ghLib::Format("[%p] Loaded config '%s', src '%s', ", this, axisConfig.c_str(), srcStr.c_str());
+
+		if (src == kVirtual) {
+			loadedBuf += ghLib::Format("virtual '%s' '%p', ", pref->GetString("virtual", "").c_str(), otherAxis);
+		} else if (src == kAnalog) {
+			loadedBuf += ghLib::Format("average '%s', ", average ? "yes" : "no");
+		} else if (src == kAxis) {
+			loadedBuf += ghLib::Format("stick '%d', ", stickNum);
+		}
+
+		if (src == kAxis || src == kAnalog) {
+			loadedBuf += ghLib::Format("channel '%d', ", axisChannel);
+		}
+
+		loadedBuf += ghLib::Format("input (%02f, %02f), output (%02f, %02f), scale '%s', invert '%s'",
+		             input.min, input.max, output.min, output.max, scale ? "true" : "false", invert ? "true" : "false");
+		logger->info(loadedBuf);
 
 	}
 
@@ -84,19 +113,16 @@ Axis::~Axis() {
  * Search for an Axis by key
  * @param key Configuration key to search by
  */
-Axis* Axis::FromConfig(std::string key, bool createNotFound /* = true*/) {
+Axis* Axis::FromConfig(std::string key) {
 	for (auto axis : axes) {
 		if (axis->config == key) {
 			return axis;
 		}
 	}
-	Axis* axis = nullptr;
-	if (createNotFound) {
-		axis = new Axis(key);
-		if (axis->type == kInvalid) {
-			delete axis;
-			return nullptr;
-		}
+	Axis* axis = new Axis(key);
+	if (axis->src == kInvalid) {
+		delete axis;
+		return nullptr;
 	}
 	return axis;
 }
@@ -118,15 +144,15 @@ bool Axis::GetInvert() const {
 }
 
 float Axis::GetRaw() const {
-	if (type == ChannelType::kAxis) {
+	if (src == ChannelType::kAxis) {
 		if (stick != nullptr && stick->GetAxisCount() > axisChannel) {
 			return stick->GetRawAxis(axisChannel);
 		}
-	} else if (type == kAnalog && analog != nullptr) {
+	} else if (src == kAnalog && analog != nullptr) {
 		// Convert analog input to a value -1 to 1
 		auto a = ghLib::Interpolate(average ? analog->GetAverageValue() : analog->GetValue(), 0, 4095, -1.0f, 1.0f);
 		return a;
-	} else if (type == kVirtual && otherAxis != nullptr) {
+	} else if (src == kVirtual && otherAxis != nullptr) {
 		return otherAxis->Get();
 	}
 	return 0.0f;

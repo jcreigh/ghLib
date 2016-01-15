@@ -51,7 +51,7 @@ class Button {
 		void SetMode(Mode newMode);
 		bool IsPressed();
 		bool Get(bool reset = true);
-		static Button* FromConfig(std::string key, bool createNotFound = true);
+		static Button* FromConfig(std::string key);
 
 	private:
 		enum ChannelType {
@@ -60,7 +60,7 @@ class Button {
 		bool value = false;
 		bool lastValue = false;
 		bool invert = false;
-		ChannelType type = kButton;
+		ChannelType src = kButton;
 		float threshold;
 		int povIndex;
 		int buttonChannel;

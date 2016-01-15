@@ -30,12 +30,12 @@ class Axis {
 		float Get() const;
 		float GetRaw() const;
 		operator float() const;
-		static Axis* FromConfig(std::string key, bool createNotFound = true);
+		static Axis* FromConfig(std::string key);
 	private:
 		enum ChannelType {
 			kAxis, kAnalog, kVirtual, kInvalid
 		};
-		ChannelType type = kAxis;
+		ChannelType src = kAxis;
 		int axisChannel;
 		bool invert = false;
 		float deadband = 0.0f;

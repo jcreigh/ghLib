@@ -24,6 +24,7 @@ TEST(Axis, ComplexConstructor) {
 
 TEST(Axis, PrefConstructor) {
 	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutString("test/Axis/type", "axis");
 	pref->PutNumber("test/Axis/channel", 5);
 	pref->PutNumber("test/Axis/js", 2);
 	pref->PutNumber("test/Axis/deadband", 0.05f);
@@ -65,8 +66,10 @@ TEST(Axis, Invert) {
 
 TEST(Axis, Virtual) {
 	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutString("test/Virtual/A/type", "axis");
 	pref->PutNumber("test/Virtual/A/channel", 1);
-	pref->PutString("test/Virtual/B/type", "virtual");
+	pref->PutString("test/Virtual/B/type", "axis");
+	pref->PutString("test/Virtual/B/src", "virtual");
 	pref->PutString("test/Virtual/B/virtual", "test/Virtual/A");
 	pref->PutBoolean("test/Virtual/B/invert", true);
 	auto stick = ghLib::Joystick::GetStickForPort(0);
@@ -80,6 +83,7 @@ TEST(Axis, Virtual) {
 
 TEST(Axis, Coerce) {
 	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutString("test/Coerce/type", "axis");
 	pref->PutNumber("test/Coerce/channel", 1);
 	pref->PutNumber("test/Coerce/input/min", 0.1f);
 	pref->PutNumber("test/Coerce/input/max", 0.6f);
@@ -95,6 +99,7 @@ TEST(Axis, Coerce) {
 
 TEST(Axis, Interpolate) {
 	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutString("test/Interpolate/type", "axis");
 	pref->PutNumber("test/Interpolate/channel", 1);
 	pref->PutNumber("test/Interpolate/input/min", 0.0f);
 	pref->PutNumber("test/Interpolate/input/max", 0.5f);
@@ -113,8 +118,9 @@ TEST(Axis, Interpolate) {
 
 TEST(Axis, AnalogInput) {
 	auto pref = NetworkTable::GetTable("Preferences");
+	pref->PutString("test/Analog/type", "axis");
 	pref->PutNumber("test/Analog/channel", 1);
-	pref->PutString("test/Analog/type", "analog");
+	pref->PutString("test/Analog/src", "analog");
 	auto axis = ghLib::Axis("test/Analog");
 	auto analog = new ghLib::AnalogInput(1);
 	analog->SetValue(4095);

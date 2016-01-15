@@ -55,19 +55,16 @@ void ButtonRunner::SetEnabled(bool enabled) { // Enable or disable the ButtonChe
  * Search for a Button by key
  * @param key Configuration key to search by
  */
-Button* Button::FromConfig(std::string key, bool createNotFound /* = true*/) {
+Button* Button::FromConfig(std::string key) {
 	for (auto button : buttons) {
 		if (button->config == key) {
 			return button;
 		}
 	}
-	Button* button = nullptr;
-	if (createNotFound) {
-		button = new Button(key);
-		if (button->type == kInvalid) {
-			delete button;
-			return nullptr;
-		}
+	Button* button = new Button(key);
+	if (button->src == kInvalid) {
+		delete button;
+		return nullptr;
 	}
 	return button;
 }
@@ -108,7 +105,7 @@ Button::Button(int buttonChannel, ghLib::Joystick* stick, Mode mode /* = Button:
  * foo = channel. Either button number, axis number, or pov direction (int)<br>
  * foo.js = joystick (int)<br>
  * foo.mode = raw, press, release, toggle (string)<br>
- * foo.type = button, pov, axis (string)<br>
+ * foo.src = button, pov, axis (string)<br>
  * foo.threshold = axis threshold. If negative, value must be less than it. (valid only for axis) (float)<br>
  * foo.index = index of the pov (valid only for pov) (int)
  * </p>
@@ -121,10 +118,16 @@ Button::Button(std::string buttonConfig) {
 
 	if (!pref->ContainsSubTable(buttonConfig)) {
 		logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and could not find it"));
-		type = kInvalid;
+		src = kInvalid;
 		return;
 	} else {
 		pref = NetworkTable::GetTable("Preferences/" + buttonConfig);
+		auto type = pref->GetString("type", "");
+		if (type != "button") {
+			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found unexpected type '" + type + "'"));
+			src = kInvalid;
+			return;
+		}
 		buttonChannel = (int)pref->GetNumber("channel", 1); // Specify a default even though this won't be called if there's no value
 		auto stickNum = (int)pref->GetNumber("js", 0); // Default to joystick 0
 		stick = ghLib::Joystick::GetStickForPort(stickNum);
@@ -142,51 +145,51 @@ Button::Button(std::string buttonConfig) {
 			SetMode(kRaw);
 		}
 
-		std::string typeStr = pref->GetString("type", "button");
-		if (typeStr == "button") {
-			type = kButton;
-		} else if (typeStr == "pov") {
-			type = kPOV;
+		std::string srcStr = pref->GetString("src", "button");
+		if (srcStr == "button") {
+			src = kButton;
+		} else if (srcStr == "pov") {
+			src = kPOV;
 			povIndex = (int)pref->GetNumber("pov", 0);
-		} else if (typeStr == "axis") {
-			type = kAxis;
-		} else if (typeStr == "virtual") {
-			type = kVirtual;
+		} else if (srcStr == "axis") {
+			src = kAxis;
+		} else if (srcStr == "virtual") {
+			src = kVirtual;
 			auto virtualStr = pref->GetString("virtual", "");
-			// Search for a Button first, then an Axis if not found.
-			otherButton = Button::FromConfig(virtualStr, false);
-			if (otherButton == nullptr) {
+			auto virtualType = NetworkTable::GetTable("Preferences")->GetString(virtualStr + "/type", "");
+			if (virtualType == "axis") {
 				otherAxis = Axis::FromConfig(virtualStr);
-			}
-			if (otherButton == nullptr && otherAxis == nullptr) {
-				type = kInvalid;
-				logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and could note find virtual '" + virtualStr + "'"));
+			} else if (virtualType == "button") {
+				otherButton = Button::FromConfig(virtualStr);
+			} else {
+				logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and could not load virtual '" + virtualStr + "'"));
+				src = kInvalid;
 				return;
 			}
-		} else if (typeStr == "analog") {
-			type = kAnalog;
+		} else if (srcStr == "analog") {
+			src = kAnalog;
 			analog = new ghLib::AnalogInput(buttonChannel);
 			average = pref->GetBoolean("analogAverage", false);
-		} else if (typeStr == "digital") {
-			type = kDigital;
+		} else if (srcStr == "digital") {
+			src = kDigital;
 			digital = new ghLib::DigitalInput(buttonChannel);
 		} else {
-			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown type '" + typeStr + "'. Defaulting to 'button'"));
-			type = kButton;
+			logger->error(ghLib::Format("Attempting to load config '" + buttonConfig + "' and found an unknown src '" + srcStr + "'. Defaulting to 'button'"));
+			src = kButton;
 		}
-		std::string loadedBuf = ghLib::Format("[%p] Loaded config '%s', stick '%d', type '%s', ", this, buttonConfig.c_str(), stickNum, typeStr.c_str());
+		std::string loadedBuf = ghLib::Format("[%p] Loaded config '%s', stick '%d', src '%s', ", this, buttonConfig.c_str(), stickNum, srcStr.c_str());
 
-		if (type == kPOV) {
-			loadedBuf += ghLib::Format("povIndex '%d', ", povIndex);
-		} else if (type == kAxis || type == kAnalog || otherAxis != nullptr){
+		if (src == kAxis || src == kAnalog || otherAxis != nullptr){
 			threshold = (float)pref->GetNumber("threshold", 0.95f);
 			loadedBuf += ghLib::Format("threshold '%.2f', ", threshold);
-		} else if (type == kVirtual) {
-			if (otherButton) {
-				loadedBuf += ghLib::Format("otherButton '%s' '%p', ", pref->GetString("virtual", "").c_str(), otherButton);
-			} else if (otherAxis) {
-				loadedBuf += ghLib::Format("otherAxis '%s' '%p', ", pref->GetString("virtual", "").c_str(), otherButton);
-			}
+		}
+		if (src == kPOV) {
+			loadedBuf += ghLib::Format("povIndex '%d', ", povIndex);
+		} else if (src == kVirtual) {
+			loadedBuf += ghLib::Format("virtual '%s' '%p', ", pref->GetString("virtual", "").c_str(),
+			             otherButton != nullptr ? (void*)otherButton : (void*)otherAxis);
+		} else if (src == kAnalog) {
+			loadedBuf += ghLib::Format("average '%s', ", average ? "yes" : "no");
 		}
 		invert = pref->GetBoolean("invert", false);
 
@@ -212,18 +215,18 @@ Button::~Button() {
 void Button::Update() {
 	bool newValue;
 	auto logger = ghLib::Logger::getLogger("Button");
-	if (type == kButton) {
+	if (src == kButton) {
 		if (buttonChannel > 0 && buttonChannel <= stick->GetButtonCount()) {
 			newValue = stick->GetRawButton(buttonChannel);
 		} else {
 			newValue = false;
 		}
-	} else if (type == kPOV) {
+	} else if (src == kPOV) {
 		// 8 direction POV, each position is 45° from eachother
 		if (povIndex >= 0 && buttonChannel < stick->GetButtonCount()) {
 			newValue = (45 * buttonChannel) == stick->GetPOV(povIndex);
 		}
-	} else if (type == kAxis) {
+	} else if (src == kAxis) {
 		float axisValue = 0;
 		if (buttonChannel >= 0 && buttonChannel < stick->GetAxisCount()) {
 			axisValue = stick->GetRawAxis(buttonChannel);
@@ -231,7 +234,7 @@ void Button::Update() {
 		newValue = AboveThreshold(axisValue, threshold);
 		logger->trace(ghLib::Format("[:%d] [%p] axis = %0.2f, threshold = %0.2f, value = %s",
 		                __LINE__, this, axisValue, threshold, newValue ? "true" : "false"));
-	} else if (type == kVirtual) {
+	} else if (src == kVirtual) {
 		if (otherButton != nullptr) {
 			newValue = otherButton->Get();
 			logger->trace(ghLib::Format("[:%d] [%p] otherButton (%p) = %0.2f", __LINE__, this, otherButton, newValue));
@@ -242,12 +245,12 @@ void Button::Update() {
 		} else {
 			newValue = false;
 		}
-	} else if (type == kAnalog) {
+	} else if (src == kAnalog) {
 			auto axisValue = ghLib::Interpolate(average ? analog->GetAverageValue() : analog->GetValue(), 0, 4095, -1.0f, 1.0f);
 			newValue = AboveThreshold(axisValue, threshold);
 			logger->trace(ghLib::Format("[:%d] [%p] analog (%p) = %0.2f, threshold = %0.2f, value = %s",
 			              __LINE__, this, analog, axisValue, threshold, newValue ? "true" : "false"));
-	} else if (type == kDigital) {
+	} else if (src == kDigital) {
 		newValue = digital->Get();
 	} else {
 		newValue = false;
