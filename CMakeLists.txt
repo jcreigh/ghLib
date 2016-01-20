@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 set(PROJECT_NAME ghLib)
 
 option(ROBOT "Build library for Robot" ON)
+option(TESTS "Build library for Robot" ON)
 option(WPILIB_DIR "Path to WPI libraries" ~/Robotics/lib)
 
 #set(CMAKE_BUILD_TYPE Debug)
@@ -42,6 +43,14 @@ file(GLOB_RECURSE SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 add_dependencies(${PROJECT_NAME} ntcore narflib narflog)
 
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+	add_custom_target(docs ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Generating documentation with Doxygen" VERBATIM
+		)
+endif(DOXYGEN_FOUND)
+
 if(ROBOT)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -fPIC -L.  -march=armv7-a -mtune=cortex-a9 ")
 	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-rpath,/opt/GenICam_v2_3/bin/Linux_armv7-a,-L.")
@@ -54,6 +63,17 @@ if(ROBOT)
 
 	set(wpilib_nonshared ${WPILIB_DIR}/libwpilib_nonshared.a)
 	set(HALAthena ${WPILIB_DIR}/libHALAthena.a)
+
+	install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+	install(FILES ${NARFLOG_LIBS_DIR}/libnarflog.a ${NARFLIB_LIBS_DIR}/libnarflib.a DESTINATION lib)
+	install(DIRECTORY ${NARFLIB_INCLUDE_DIR} DESTINATION .)
+	install(DIRECTORY ${NARFLOG_INCLUDE_DIR} DESTINATION .)
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/include DESTINATION .)
+	install(DIRECTORY docs/html DESTINATION docs)
+
+	set(CPACK_PACKAGE_FILE_NAME "ghLib")
+	set(CPACK_GENERATOR "ZIP")
+	include(CPack)
 
 else(ROBOT)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wpointer-arith -Wtype-limits -Wwrite-strings -Wuninitialized -Werror=redundant-decls -Wsign-compare -Wconversion -g -fno-ident")

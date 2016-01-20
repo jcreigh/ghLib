@@ -21,25 +21,25 @@ The following dependencies are automatically downloaded and built when needed
 - [gtest](http://googletest.googlecode.com/)
 
 ## Building
-
-### Native
-```bash
-mkdir build
-cd build
-cmake -DROBOT=OFF ..
-make
-```
-
-### ARM (Robot)
 ```bash
 mkdir build
 cd build
 cmake ..
+```
+
+To build natively, use `cmake -DROBOT=OFF ..` instead
+
+### Library
+```bash
 make
 ```
 
 ### Documentation
 ```bash
-doxygen
+make docs
 ```
 
+### Packaging
+```bash
+cpack ..
+```
