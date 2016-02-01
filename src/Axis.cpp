@@ -23,11 +23,30 @@ Axis::Axis(int axisChannel, ghLib::Joystick* stick) : axisChannel(axisChannel), 
 }
 
 /**
- * Constructor for a Axis to load from Preferences
- * <p><b>Axis Preferences</b><br>
- * foo = channel. Either axis number, axis number, or pov direction (int)<br>
- * foo.js = joystick (int)<br>
- * </p>
+ * @brief Constructor for a Axis to load from Preferences
+ * @details
+ *  Source   | Description
+ * ----------|-------------
+ * `axis`    | Joystick axis
+ * `virtual` | Another Button or Axis
+ * `analog`  | Analog port
+ *
+ *  Preference  | Type   | Default  | Description
+ * -------------|--------|----------|-------------
+ * `type`       | string |          | Must be 'axis'
+ * `channel`    | int    | `0`      | Channel. Either axis number, or analog channel
+ * `js`         | int    | `0`      | Joystick number
+ * `src`        | string | `button` | axis, virtual, analog
+ * `threshold`  | float  | `0.95`   | Threshold. If negative, value must be less than it
+ * `average`    | bool   | `false`  | Use average analog input
+ * `virtual`    | string |          | Name of other axis
+ * `input.min`  | float  | `-1.0`   | Range to coerce into
+ * `input.max`  | float  | ` 1.0`   | &nbsp;
+ * `output.min` | float  | `-1.0`   | Range to scale into
+ * `output.max` | float  | ` 1.0`   | (if `scale` is set)
+ * `scale`      | bool   | `false`  | Scale output
+ * `invert`     | bool   | `false`  | Invert output
+ * `deadband`   | float  | `0.0`    | Apply deadband
  * @param axisConfig The configuration key for the axis
  */
 Axis::Axis(std::string axisConfig) {
@@ -143,6 +162,10 @@ bool Axis::GetInvert() const {
 	return invert;
 }
 
+/**
+* Get the raw value of the axis, without applying anything
+* @return Value of the Axis
+*/
 float Axis::GetRaw() const {
 	if (src == ChannelType::kAxis) {
 		if (stick != nullptr && stick->GetAxisCount() > axisChannel) {

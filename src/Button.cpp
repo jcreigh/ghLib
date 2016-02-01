@@ -100,15 +100,37 @@ Button::Button(int buttonChannel, ghLib::Joystick* stick, Mode mode /* = Button:
 }
 
 /**
- * Constructor for a Button to load from Preferences
- * <p><b>Button Preferences</b><br>
- * foo = channel. Either button number, axis number, or pov direction (int)<br>
- * foo.js = joystick (int)<br>
- * foo.mode = raw, press, release, toggle (string)<br>
- * foo.src = button, pov, axis (string)<br>
- * foo.threshold = axis threshold. If negative, value must be less than it. (valid only for axis) (float)<br>
- * foo.index = index of the pov (valid only for pov) (int)
- * </p>
+ * @brief Constructor for a Button to load from Preferences
+ * @details
+ *  Mode     | Description
+ * ----------|-------------
+ * `press`   | Triggers on rising edge
+ * `release` | Triggers on trailing edge
+ * `toggle`  | Triggers on rising and trailing edge
+ * `raw`     | Passes through raw state
+ *
+ *  Source   | Description
+ * ----------|-------------
+ * `button`  | Joystick button
+ * `pov`     | Joystick POV
+ * `axis`    | Joystick axis
+ * `virtual` | Another Button or Axis
+ * `analog`  | Analog port
+ * `digital` | Digital port
+ *
+ *  Preference  | Type   | Default  | Description
+ * -------------|--------|----------|-------------
+ * `type`       | string |          | Must be 'button'
+ * `channel`    | int    | `1`      | Channel. Either button number, axis number, pov direction, or digital/analog channel
+ * `js`         | int    | `0`      | Joystick number
+ * `mode`       | string | `raw`    | raw, press, release, toggle
+ * `src`        | string | `button` | button, pov, axis, virtual, analog, digital
+ * `threshold`  | float  | `0.95`   | Threshold. If negative, value must be less than it (axis and analog only)
+ * `average`    | bool   | `false`  | Use average analog input
+ * `pov`        | int    | `0`      | Index of the POV (POV only)
+ * `virtual`    | string |          | Name of other button or axis
+ *
+ *
  * @param buttonConfig The configuration key for the button
  */
 Button::Button(std::string buttonConfig) {
