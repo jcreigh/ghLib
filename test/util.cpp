@@ -52,3 +52,14 @@ TEST(Util, Deadband) {
 TEST(Util, Format) {
 	ASSERT_EQ(ghLib::Format("%d %s %.2f abc\n", 2, "foo", 5.123), "2 foo 5.12 abc\n");
 }
+
+TEST(Util, Skim) {
+	//T Skim(T v, T limit = 1) {
+	ASSERT_NEAR(1.0f, ghLib::Skim(2.0f), 0.0001f);
+	ASSERT_NEAR(0.2f, ghLib::Skim(1.2f), 0.0001f);
+	ASSERT_NEAR(0.2f, ghLib::Skim(-1.2f), 0.0001f);
+	ASSERT_NEAR(0.0f, ghLib::Skim(-1.0f), 0.0001f);
+	ASSERT_NEAR(0.0f, ghLib::Skim(0.5f), 0.0001f);
+	ASSERT_EQ(5, ghLib::Skim(15, 10));
+	ASSERT_EQ(7, ghLib::Skim(-17, 10));
+}

@@ -73,6 +73,21 @@ T Deadband(T v, T deadband) {
 	return (std::abs(v) < deadband) ? 0 : (std::signbit(v) ? -1 : 1) * Interpolate<T, T>(std::abs(v), deadband, 1.0, 0.0, 1.0);
 }
 
+/**
+ * @fn T Skim(T v, T limit = 1)
+ * @brief Skims amount above limit
+ *
+ * If `v` is above `limit` (or below `-limit`), return the difference
+ * @param v Input value
+ * @param limit Limit, defaults to 1
+ * @return `abs(v) - limit` if `abs(v) > limit`
+ */
+template<class T>
+T Skim(T v, T limit = 1) {
+	auto skimmed = std::abs(v) - limit;
+	return (skimmed < 0) ? 0 : skimmed;
+}
+
 std::string Format(const std::string fmt_str, ...);
 std::string FilterASCII(const std::string in);
 std::string EscapeString(const std::string in);
