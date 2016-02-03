@@ -6,7 +6,7 @@
 
 #include "ghLib/wpi/AnalogInput.h"
 
-#ifndef ROBOT
+#ifdef NOROBOT
 namespace ghLib {
 
 std::unordered_map<int, int> AnalogInput::values;

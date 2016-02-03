@@ -6,7 +6,7 @@
 
 #include "ghLib/wpi/Joystick.h"
 
-#ifndef ROBOT
+#ifdef NOROBOT
 namespace ghLib {
 
 std::unordered_map<int, Joystick*> Joystick::sticks_;

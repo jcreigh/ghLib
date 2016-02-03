@@ -6,7 +6,7 @@
 
 #include "ghLib/wpi/DigitalInput.h"
 
-#ifndef ROBOT
+#ifdef NOROBOT
 namespace ghLib {
 
 std::unordered_map<int, bool> DigitalInput::values;

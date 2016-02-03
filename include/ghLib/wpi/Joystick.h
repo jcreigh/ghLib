@@ -6,7 +6,7 @@
 #ifndef SRC_GHLIB_JOYSTICK_H_
 #define SRC_GHLIB_JOYSTICK_H_
 
-#ifdef ROBOT
+#ifndef NOROBOT
 
 #include "WPILib.h"
 namespace ghLib {
@@ -55,6 +55,6 @@ private:
 
 }
 
-#endif /* ROBOT */
+#endif
 
 #endif /* SRC_GHLIB_JOYSTICK_H_ */

@@ -6,7 +6,7 @@
 
 #include "ghLib/wpi/DriverStation.h"
 
-#ifndef ROBOT
+#ifdef NOROBOT
 namespace ghLib {
 
 void DriverStation::ReportError(std::string error) {

@@ -7,7 +7,7 @@
 #ifndef GHLIB_LOGGER_H_
 #define GHLIB_LOGGER_H_
 
-#ifdef ROBOT
+#ifndef NOROBOT
 #include "WPILib.h"
 
 // Because wpilib pollutes the global namespace

@@ -24,14 +24,13 @@ include_directories(${PROJECT_SOURCE_DIR}/include ${NWT_INCLUDE_DIR}
 	${NARFLOG_INCLUDE_DIR} ${NARFLIB_INCLUDE_DIR} ${LIBWEBSOCKETS_INCLUDE_DIRS})
 
 if(ROBOT)
-	add_definitions(-DROBOT=1)
-
 	file(GLOB_RECURSE NI_LIBS ${WPILIB_DIR}/ni-libraries/*.so*)
 	list(REMOVE_ITEM NI_LIBS ${WPILIB_DIR}/ni-libraries/libwpi.so ${WPILIB_DIR}/ni-libraries/libwpi_2015.so)
 	set(WPILIB_LD_LIBS ${WPILIB_DIR}/ni-libraries/libwpi.so ${WPILIB_DIR}/ni-libraries/libwpi_2015.so)
 
 else(ROBOT)
-	add_definitions(-DNARF_PREF_FILENAME="${PROJECT_SOURCE_DIR}/test/prefs.ini")
+	add_definitions(-DNOROBOT=1)
+
 	add_definitions(-DNARF_LOGGER_BASEPATH="${PROJECT_SOURCE_DIR}/test/")
 	add_subdirectory(${EXT_PROJECTS_DIR}/gtest gtest)
 endif(ROBOT)
@@ -69,7 +68,7 @@ if(ROBOT)
 	install(DIRECTORY ${NARFLIB_INCLUDE_DIR} DESTINATION .)
 	install(DIRECTORY ${NARFLOG_INCLUDE_DIR} DESTINATION .)
 	install(DIRECTORY ${PROJECT_SOURCE_DIR}/include DESTINATION .)
-	install(DIRECTORY docs/html DESTINATION docs)
+	install(DIRECTORY ${PROJECT_BINARY_DIR}/docs/html DESTINATION docs)
 
 	set(CPACK_PACKAGE_FILE_NAME "ghLib")
 	set(CPACK_GENERATOR "ZIP")

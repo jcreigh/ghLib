@@ -3,7 +3,10 @@
 /* Open Source Software - May be modified and shared but must                 */
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
-#ifdef ROBOT
+#ifndef SRC_GHLIB_DIGITALINPUT_H_
+#define SRC_GHLIB_DIGITALINPUT_H_
+
+#ifndef NOROBOT
 
 #include "WPILib.h"
 namespace ghLib {
@@ -31,3 +34,5 @@ private:
 }
 
 #endif
+
+#endif /* SRC_GHLIB_DIGITALINPUT_H_ */
