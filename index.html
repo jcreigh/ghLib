@@ -29,55 +29,26 @@
       </header>
       <section>
         <p><a href="https://travis-ci.org/jcreigh/ghLib"><img src="https://travis-ci.org/jcreigh/ghLib.svg?branch=master" alt="Build Status"></a></p>
-
-<p>ghLib is a C++ helper library created by The Gearheads (Team 1189) for use with FRC.</p>
-
-<h2>
-<a id="prerequisites" class="anchor" href="#prerequisites" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Prerequisites</h2>
-
-<ul>
-<li>CMake 2.8 or newer</li>
-<li>Native Toolchain (To build locally)</li>
-<li>ARM Toolchain (To crosscompile for use on the robot)</li>
-<li>doxygen (optional, to build documentation)</li>
-</ul>
-
-<h2>
-<a id="dependencies" class="anchor" href="#dependencies" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Dependencies</h2>
-
-<p>The following dependencies are automatically downloaded and built when needed</p>
-
-<ul>
-<li><a href="https://github.com/jcreigh/narflog">narflog</a></li>
-<li><a href="https://github.com/narfblock/narflib">narflib</a></li>
-<li><a href="https://github.com/PeterJohnson/ntcore">ntcore</a></li>
-<li><a href="https://usfirst.collab.net/sf/projects/wpilib/">wpilib</a></li>
-<li><a href="http://googletest.googlecode.com/">gtest</a></li>
-</ul>
-
-<h2>
-<a id="building" class="anchor" href="#building" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Building</h2>
-
-<div class="highlight highlight-source-shell"><pre>mkdir build
-<span class="pl-c1">cd</span> build
-cmake ..</pre></div>
-
-<p>To build natively, use <code>cmake -DROBOT=OFF ..</code> instead</p>
+                <p>ghLib is a C++ helper library created by The Gearheads (Team 1189) for use with FRC.</p>
 
 <h3>
-<a id="library" class="anchor" href="#library" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Library</h3>
+<a id="user-content-installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h3>
 
-<div class="highlight highlight-source-shell"><pre>make</pre></div>
+<ol>
+<li>Download the newest release from <a href="https://github.com/jcreigh/ghLib/releases">Releases</a>
+</li>
+<li>Extract somewhere (this guide uses <code>C:\Users\Gearhead</code>)</li>
+<li>In Eclipse, open up Properties under the Project menu</li>
+<li>
+<p>Add the following Includes, Libraries, and Library Paths (updating the path to where you extracted ghLib)</p>
 
-<h3>
-<a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Documentation</h3>
+<p><a href="ghLib_install_01.png" target="_blank"><img src="ghLib_install_01.png" alt="Includes" style="max-width:100%;"></a></p>
 
-<div class="highlight highlight-source-shell"><pre>make docs</pre></div>
+<p><a href="ghLib_install_02.png" target="_blank"><img src="ghLib_install_02.png" alt="Libraries" style="max-width:100%;"></a></p>
 
-<h3>
-<a id="packaging" class="anchor" href="#packaging" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Packaging</h3>
-
-<div class="highlight highlight-source-shell"><pre>cpack ..</pre></div>
+<p><a href="ghLib_install_03.png" target="_blank"><img src="ghLib_install_03.png" alt="Library Paths" style="max-width:100%;"></a></p>
+</li>
+</ol>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/jcreigh">jcreigh</a></p>
@@ -85,6 +56,6 @@ cmake ..</pre></div>
       </footer>
     </div>
     <script src="javascripts/scale.fix.js"></script>
-    
+
   </body>
 </html>
