@@ -4,6 +4,8 @@
 
 ghLib is a C++ helper library created by The Gearheads (Team 1189) for use with FRC.
 
+See the [github page](http://jcreigh.github.io/ghLib/) for installation instructions.
+
 ## Prerequisites
 
 - CMake 2.8 or newer
