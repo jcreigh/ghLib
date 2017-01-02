@@ -1,0 +1,556 @@
+plugins {
+	id "org.ajoberstar.grgit" version "1.6.0"
+	id "org.ysb33r.doxygen" version "0.2"
+	id "com.palantir.git-version" version '0.5.3'
+	id "cpp"
+	id "google-test"
+	id "google-test-test-suite"
+}
+
+version gitVersion()
+
+if (!hasProperty('repo')) {
+	ext.repo = 'development'
+}
+
+def repoBaseUrl = "http://first.wpi.edu/FRC/roborio/maven/${repo}"
+
+allprojects {
+	ext.repo = repo
+
+	repositories {
+		mavenCentral()
+		maven {
+			url repoBaseUrl
+		}
+	}
+}
+
+// Clone narflib repo if it doesn't exist
+if (!file("$buildDir/narflib").exists())  {
+	org.ajoberstar.grgit.Grgit.clone(dir: "$buildDir/narflib", uri: "https://github.com/narfblock/narflib")
+}
+
+evaluationDependsOn(':narflib')
+
+// Clone narflog repo if it doesn't exist
+if (!file("$buildDir/narflog").exists())  {
+	org.ajoberstar.grgit.Grgit.clone(dir: "$buildDir/narflog", uri: "https://github.com/jcreigh/narflog")
+}
+
+evaluationDependsOn(':narflog')
+
+// Clone google test repo if it doesn't exist
+if (!file("$buildDir/gtest").exists())  {
+	org.ajoberstar.grgit.Grgit.clone(dir: "$buildDir/gtest", uri: "https://github.com/google/googletest.git", refToCheckout: "release-1.8.0")
+}
+
+ext.gtestDir = "$buildDir/gtest/googletest"
+
+def halDependency =
+		project.dependencies.create("edu.wpi.first.wpilib:hal:2017.1.1-rc-2-20170101034037-3-g182f572@zip")
+def halConfig = project.configurations.detachedConfiguration(halDependency)
+halConfig.setTransitive(false)
+def hal = halConfig.files[0].canonicalFile
+
+def halUnzipLocation = "$buildDir/hal"
+
+
+// Athena dependency
+
+def athenaDependency =
+		project.dependencies.create("edu.wpi.first.wpilibc:athena:2017.1.1-rc-2-20170101034037-3-g182f572@zip")
+def athenaConfig = project.configurations.detachedConfiguration(athenaDependency)
+athenaConfig.setTransitive(false)
+def athena = athenaConfig.files[0].canonicalFile
+
+def athenaUnzipLocation = "$buildDir/athena"
+
+// wpiutil dependency
+
+def armWPIUtilDependency =
+		project.dependencies.create("edu.wpi.first.wpilib:wpiutil:1.0.2-20170101031849-1-gbac4b3d:arm@zip")
+def armWPIUtilConfig = project.configurations.detachedConfiguration(armWPIUtilDependency)
+armWPIUtilConfig.setTransitive(false)
+def armWPIUtil = armWPIUtilConfig.files[0].canonicalFile
+
+def desktopWPIUtilDependency =
+		project.dependencies.create("edu.wpi.first.wpilib:wpiutil:1.0.2-20170101031849-1-gbac4b3d:desktop@zip")
+def desktopWPIUtilConfig = project.configurations.detachedConfiguration(desktopWPIUtilDependency)
+desktopWPIUtilConfig.setTransitive(false)
+def desktopWPIUtil = desktopWPIUtilConfig.files[0].canonicalFile
+
+def wpiutilUnzipLocation = "$buildDir/wpiutil"
+
+// NetworkTables dependency
+
+def armNtDependency =
+		project.dependencies.create("edu.wpi.first.wpilib.networktables.cpp:NetworkTables:3.1.4-20170102034841-1-gbac4b3d:arm@zip")
+def armConfig = project.configurations.detachedConfiguration(armNtDependency)
+armConfig.setTransitive(false)
+def armNetTables = armConfig.files[0].canonicalFile
+
+def desktopNtDependency =
+	project.dependencies.create("edu.wpi.first.wpilib.networktables.cpp:NetworkTables:3.1.4-20170102034841-1-gbac4b3d:desktop@zip")
+def desktopConfig = project.configurations.detachedConfiguration(desktopNtDependency)
+desktopConfig.setTransitive(false)
+def desktopNetTables = desktopConfig.files[0].canonicalFile
+
+def netTablesUnzipLocation = "$buildDir/networktables"
+
+// Unzipping tasks
+
+// Create a task that will unzip the hal files into a temporary build directory
+task unzipHAL(type: Copy) {
+		description = 'Unzips the hal maven dependency so that the include files and libraries can be used'
+		group = 'ghLib'
+		from zipTree(hal)
+		into halUnzipLocation
+}
+
+// Create a task that will unzip the athena files into a temporary build directory
+task unzipAthena(type: Copy) {
+		description = 'Unzips the athena maven dependency so that the include files and libraries can be used'
+		group = 'ghLib'
+		from zipTree(athena)
+		into athenaUnzipLocation
+}
+
+// Create a task that will unzip the wpiutil files into a temporary build directory
+task unzipWPIUtil(type: Copy) {
+		description = 'Unzips the wpiutil maven dependency so that the include files and libraries can be used'
+		group = 'ghLib'
+		from zipTree(desktopWPIUtil)
+		from zipTree(armWPIUtil)
+		into wpiutilUnzipLocation
+}
+
+
+// Create a task that will unzip the networktables files into a temporary build directory
+task unzipNetworkTables(type: Copy) {
+	description = 'Unzips the networktables maven dependency so that the include files and libraries can be used'
+	group = 'ghLib'
+	from zipTree(desktopNetTables)
+	from zipTree(armNetTables)
+	into netTablesUnzipLocation
+}
+
+ext.narflog = "$buildDir/narflog"
+//ext.narflogArmLibLocation = "$narflog/libnarflog.a"
+//ext.narflogDesktopLibLocation = "$narflog/libnarflog.a"
+ext.narflogInclude = "$narflog/include"
+
+ext.narflib = "$buildDir/narflib"
+//ext.narflibArmLibLocation = "$narflibArm/libnarflib.a"
+ext.narflibInclude = "$narflib/include"
+
+// HAL dependency
+
+ext.hal = halUnzipLocation
+ext.halInclude = "$halUnzipLocation/include"
+ext.halLibLocation = "$halUnzipLocation/lib"
+ext.halLibraryTree = fileTree("$halLibLocation")
+ext.halLibraryTree.include '*.so'
+
+// This regex matches either a Windows or Unix style file separator, then the lib part of the library,
+// then the name of the library itself, and finally the .so extension at the end. The name of the library
+// is in the libName capture group, which is extracted and used for the linker flags
+def libPattern = /.*((\\/|\\).*?)+lib(?<libName>.+).so$/
+ext.halLibraryArgs = []
+
+// This adds all linker flags to the list of ni library linker flags
+halLibraryTree.each { lib ->
+	def nameMatcher = (lib.path =~ libPattern)
+	if (nameMatcher[0].size() > 1) {
+		def name = nameMatcher.group('libName')
+		halLibraryArgs << '-l' + name
+	}
+}
+
+ext.athena = athenaUnzipLocation
+ext.athenaInclude = "$athenaUnzipLocation/include"
+ext.athenaLibLocation = "$athenaUnzipLocation/lib"
+ext.athenaSharedLib = "$athenaLibLocation/libwpilibc.so"
+
+ext.wpiutil = wpiutilUnzipLocation
+ext.wpiutilInclude = "$wpiutilUnzipLocation/include"
+ext.wpiutilLibLocation = "$wpiutilUnzipLocation/Linux/arm"
+ext.wpiutilSharedLib = "$wpiutilLibLocation/libwpiutil.so"
+ext.wpiutilLibx64Location = "$wpiutilUnzipLocation/Linux/amd64"
+
+ext.netTables = netTablesUnzipLocation
+ext.netTablesInclude = "$netTablesUnzipLocation/include"
+ext.netLibArmLocation = "$netTablesUnzipLocation/Linux/arm"
+ext.netLibx64Location = "$netTablesUnzipLocation/Linux/amd64"
+
+
+model {
+	buildTypes {
+		debug
+	}
+
+	// Adds a custom toolchain for our compiler prefix and options
+	toolChains {
+		gcc(Gcc) {
+			target('arm') {
+				// We use a custom-built cross compiler with the prefix arm-frc-linux-gnueabi-<util name>
+				// If this ever changes, the prefix will need to be changed here
+				def compilerPrefix = 'arm-frc-linux-gnueabi-'
+				cppCompiler.executable = compilerPrefix + cppCompiler.executable
+				linker.executable = compilerPrefix + linker.executable
+				assembler.executable = compilerPrefix + assembler.executable
+				// Gradle auto-adds the -m32 argument to the linker and compiler. Our compiler only supports
+				// arm, and doesn't understand this flag, so it is removed from both
+				cppCompiler.withArguments { args ->
+					args << '-std=c++1y' << '-Wformat=2' << '-Wall' << '-Wextra' << '-Werror' << '-pedantic'
+						args << '-Wno-psabi' << '-Wno-unused-parameter' << '-fPIC' << '-O0' << '-g3' << '-rdynamic'
+						//TODO: When the compiler allows us to actually call deprecated functions from within
+						// deprecated function, remove this line (this will cause calling deprecated functions
+						// to be treated as a warning rather than an error).
+						args << '-Wno-error=deprecated-declarations'
+						args.remove('-m32')
+				}
+				linker.withArguments { args ->
+					args << '-rdynamic'
+					args << "-L$halLibLocation"
+					args.addAll(halLibraryArgs)
+					args << athenaSharedLib.toString()
+					args << wpiutilSharedLib.toString()
+					args << "$netLibArmLocation/libntcore.a".toString()
+					args.remove('-m32')
+				}
+
+				staticLibArchiver.executable = compilerPrefix + staticLibArchiver.executable
+			}
+			target('x64') {
+				cppCompiler.withArguments { args ->
+					args << '-std=c++1y' << '-Wformat=2' << '-Wall' << '-Wextra' << '-Werror' << '-pedantic'
+						args << '-Wno-psabi' << '-Wno-unused-parameter' << '-fPIC' << '-O0' << '-g3' << '-rdynamic'
+						//TODO: When the compiler allows us to actually call deprecated functions from within
+						// deprecated function, remove this line (this will cause calling deprecated functions
+						// to be treated as a warning rather than an error).
+						args << '-Wno-error=deprecated-declarations'
+						args << '-DNOROBOT=1'
+						args.remove('-m32')
+				}
+				linker.withArguments { args ->
+					args << '-rdynamic'
+					args << "$netLibx64Location/libntcore.a".toString()
+					args << "$wpiutilLibx64Location/libwpiutil.a".toString()
+					//args << narflibDesktopLibLocation.toString()
+					//args << narflogDesktopLibLocation.toString()
+					args.remove('-m32')
+				}
+			}
+		}
+	}
+
+	platforms {
+		arm {
+			architecture 'arm'
+			operatingSystem 'linux'
+		}
+		x64 {
+			architecture 'x86_64'
+			operatingSystem 'linux'
+		}
+	}
+
+	components {
+		ghLib(NativeLibrarySpec) {
+			targetPlatform 'arm'
+			binaries.all { binary ->
+				tasks.withType(CppCompile) {
+					dependsOn unzipNetworkTables
+					dependsOn unzipHAL
+					dependsOn unzipAthena
+					dependsOn unzipWPIUtil
+					dependsOn narflogArmStaticLibrary
+					dependsOn narflibArmStaticLibrary
+				}
+			}
+			binaries.withType(SharedLibraryBinary) { binary ->
+				buildable = false
+			}
+			sources {
+				cpp {
+					source {
+						srcDirs = ["src"]
+						includes = ['**/*.cpp']
+					}
+					exportedHeaders {
+						srcDirs = ["include",
+							netTablesInclude,
+							athenaInclude,
+							halInclude,
+							wpiutilInclude,
+							narflogInclude,
+							narflibInclude]
+						includes = ['**/*.h']
+					}
+				}
+			}
+		}
+		ghLibDesktop(NativeLibrarySpec) {
+			targetPlatform 'x64'
+			binaries.all { binary ->
+				tasks.withType(CppCompile) {
+					dependsOn unzipNetworkTables
+					dependsOn unzipWPIUtil
+				}
+			}
+			binaries.withType(SharedLibraryBinary) { binary ->
+				buildable = false
+			}
+			sources {
+				cpp {
+					source {
+						srcDirs = ["src"]
+						includes = ['**/*.cpp']
+					}
+					exportedHeaders {
+						srcDirs = ["include",
+							netTablesInclude,
+							wpiutilInclude,
+							narflogInclude,
+							narflibInclude]
+						includes = ['**/*.h']
+					}
+				}
+			}
+		}
+
+		narflibArm(NativeLibrarySpec) {
+			targetPlatform 'arm'
+			binaries.all { binary ->
+				tasks.withType(CppCompile) {
+					dependsOn unzipHAL
+				}
+			}
+			sources {
+				cpp {
+					source {
+						srcDirs = ["$narflib"]
+						includes = ['tokenize.cpp', 'format.cpp', 'path.cpp', 'signal.cpp']
+					}
+					exportedHeaders {
+						srcDirs = [narflibInclude]
+						includes = ['**/*.h']
+					}
+				}
+			}
+		}
+
+		narflogArm(NativeLibrarySpec) {
+			targetPlatform 'arm'
+			binaries.all { binary ->
+				tasks.withType(CppCompile) {
+					dependsOn unzipHAL
+				}
+			}
+			sources {
+				cpp {
+					source {
+						srcDirs = ["$narflog/src"]
+						includes = ['**/*.cpp']
+						excludes = ['test.cpp']
+					}
+					exportedHeaders {
+						srcDirs = [narflogInclude, narflibInclude]
+						includes = ['**/*.h']
+					}
+				}
+			}
+		}
+
+		narflibDesktop(NativeLibrarySpec) {
+			targetPlatform 'x64'
+			sources {
+				cpp {
+					source {
+						srcDirs = ["$narflib"]
+						includes = ['tokenize.cpp', 'format.cpp', 'path.cpp', 'signal.cpp']
+					}
+					exportedHeaders {
+						srcDirs = [narflibInclude]
+						includes = ['**/*.h']
+					}
+				}
+			}
+		}
+
+		narflogDesktop(NativeLibrarySpec) {
+			targetPlatform 'x64'
+			sources {
+				cpp {
+					source {
+						srcDirs = ["$narflog/src"]
+						includes = ['**/*.cpp']
+						excludes = ['test.cpp']
+					}
+					exportedHeaders {
+						srcDirs = [narflogInclude, narflibInclude]
+						includes = ['**/*.h']
+					}
+				}
+			}
+		}
+
+		gtest(NativeLibrarySpec) {
+			targetPlatform "x64"
+			sources {
+				cpp {
+					source {
+						srcDirs = ["$gtestDir/src"]
+						includes = ["**/gtest-all.cc"]
+					}
+					exportedHeaders {
+						srcDirs = ["$gtestDir/include", "$gtestDir"]
+						includes = ["**/*.h", "**/*.cc"]
+					}
+				}
+			}
+		}
+
+		ghLibDesktopTest(NativeLibrarySpec) {
+			targetPlatform "x64"
+				binaries.all { binary ->
+					tasks.withType(CppCompile) {
+						dependsOn unzipNetworkTables
+						dependsOn ghLibDesktopStaticLibrary
+					}
+				}
+			sources {
+				cpp {
+					source {
+						srcDirs = ["test"]
+						includes = ['**/main.cpp']
+					}
+					exportedHeaders {
+						srcDirs = ["include",
+							netTablesInclude,
+							wpiutilInclude,
+							narflogInclude,
+							narflibInclude,
+							"$gtestDir/include"]
+						includes = ['**/*.h']
+					}
+				}
+			}
+		}
+
+	}
+
+	testSuites {
+		ghLibDesktopTestSuite(GoogleTestTestSuiteSpec) {
+			testing $.components.ghLibDesktopTest
+		}
+	}
+
+	binaries {
+		withType(GoogleTestTestSuiteBinarySpec) {
+			if (targetPlatform.architecture.name.contains("arm")) {
+				buildable  = false
+			} else {
+
+				tasks.withType(CppCompile) {
+					dependsOn ghLibDesktopStaticLibrary
+				}
+
+				lib library: "ghLibDesktopTest", linkage: "static"
+				lib library: "ghLibDesktop", linkage: "static"
+				lib library: "narflogDesktop", linkage: "static"
+				lib library: "narflibDesktop", linkage: "static"
+				lib library: "gtest", linkage: "static"
+
+				if (targetPlatform.operatingSystem.linux) {
+					cppCompiler.args '-pthread'
+					linker.args '-pthread'
+				}
+			}
+		}
+	}
+}
+
+ext.checkDoxygen = {
+	try {
+		'doxygen'.execute()
+		true
+	} catch (IOException e) {
+		false
+	}
+}
+
+if (checkDoxygen()) {
+
+	doxygen {
+		def halLocation = '../hal'
+		source new File("src")
+		source new File("include")
+		extension_mapping 'inc=C++'
+		project_name 'ghLib'
+		javadoc_autobrief true
+		recursive true
+		quiet true
+		warnings false
+		warn_if_doc_error false
+		warn_no_paramdoc false
+		warn_format false
+		warn_logfile false
+		warn_if_undocumented false
+		generate_latex false
+		html_timestamp true
+		generate_treeview true
+		outputDir new File("$buildDir/docs")
+	}
+
+}
+
+task ghLibZip(type: Zip) {
+	description = 'Zips all of the libraries for wpilibc'
+	group = 'ghLib'
+	baseName = "ghLib"
+	destinationDir = project.buildDir
+
+	tasks.all { task ->
+		if (task.name == 'createGhLibStaticLibrary'
+			|| task.name == 'createNarflibArmStaticLibrary'
+			|| task.name == 'createNarflogArmStaticLibrary') {
+			from(task.outputs.files.getSingleFile()) {
+				into 'user/cpp/lib'
+				rename { fn ->
+					fn.replace("Arm", "")
+				}
+			}
+		}
+	}
+
+	from('include') { into 'user/cpp/include' }
+	from("$buildDir/narflib/include") {
+		into 'user/cpp/include'
+		include "**/tokenize.h"
+		include "**/format.h"
+		include "**/signal.h"
+	}
+	from("$buildDir/narflog/include") {
+		into 'user/cpp/include'
+		exclude "**/version.h.in"
+	}
+
+	if (checkDoxygen()) {
+		dependsOn doxygen
+		from ("$doxygen.outputDir/html") {
+			into 'user/cpp/docs/ghLib'
+		}
+	}
+}
+
+tasks.whenTaskAdded { task ->
+		if (task.name == 'ghLibStaticLibrary' || task.name == 'narflibArm' || task.name == 'narflogArm') {
+				ghLibZip.dependsOn task
+		}
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.2.1' //we want gradle 2.10 to run this project
+}

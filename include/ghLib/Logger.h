@@ -7,16 +7,6 @@
 #ifndef GHLIB_LOGGER_H_
 #define GHLIB_LOGGER_H_
 
-#ifndef NOROBOT
-#include "WPILib.h"
-
-// Because wpilib pollutes the global namespace
-#ifdef ERROR
-#undef ERROR
-#endif
-
-#endif
-
 #include "narf/Logger.h"
 
 namespace ghLib {

@@ -3,30 +3,36 @@
 /* Open Source Software - May be modified and shared but must                 */
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
-#ifndef SRC_GHLIB_DRIVERSTATION_H_
-#define SRC_GHLIB_DRIVERSTATION_H_
+#ifndef SRC_GHLIB_DIGITALINPUT_H_
+#define SRC_GHLIB_DIGITALINPUT_H_
 
 #ifndef NOROBOT
 
-#include "WPILib.h"
+#include "DigitalInput.h"
 namespace ghLib {
-typedef ::DriverStation DriverStation;
+typedef ::frc::DigitalInput DigitalInput;
 }
 
 #else
 
-#include <string>
-#include <stdio.h>
+#include <unordered_map>
 
 namespace ghLib {
 
-class DriverStation {
-	public:
-	static void ReportError(std::string error);
+class DigitalInput {
+public:
+	DigitalInput(int channel);
+	bool Get() const;
+	void Set(bool newValue);
+
+private:
+	int channel;
+	static std::unordered_map<int, bool> values;
+
 };
 
 }
 
 #endif
 
-#endif /* SRC_GHLIB_DRIVERSTATION_H_ */
+#endif /* SRC_GHLIB_DIGITALINPUT_H_ */

@@ -3,14 +3,14 @@
 /* Open Source Software - May be modified and shared but must                 */
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
-#ifndef SRC_GHLIB_DIGITALINPUT_H_
-#define SRC_GHLIB_DIGITALINPUT_H_
+#ifndef SRC_GHLIB_ANALOGINPUT_H_
+#define SRC_GHLIB_ANALOGINPUT_H_
 
 #ifndef NOROBOT
 
-#include "WPILib.h"
+#include "AnalogInput.h"
 namespace ghLib {
-typedef ::DigitalInput DigitalInput;
+typedef ::frc::AnalogInput AnalogInput;
 }
 
 #else
@@ -19,15 +19,16 @@ typedef ::DigitalInput DigitalInput;
 
 namespace ghLib {
 
-class DigitalInput {
+class AnalogInput {
 public:
-	DigitalInput(int channel);
-	bool Get() const;
-	void Set(bool newValue);
+	AnalogInput(int channel);
+	int GetValue();
+	int GetAverageValue();
+	void SetValue(int newValue);
 
 private:
 	int channel;
-	static std::unordered_map<int, bool> values;
+	static std::unordered_map<int, int> values;
 
 };
 
@@ -35,4 +36,4 @@ private:
 
 #endif
 
-#endif /* SRC_GHLIB_DIGITALINPUT_H_ */
+#endif /* SRC_GHLIB_ANALOGINPUT_H_ */

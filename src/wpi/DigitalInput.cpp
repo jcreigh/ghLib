@@ -4,7 +4,7 @@
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
 
-#include "ghLib/wpi/DigitalInput.h"
+#include "ghLib/wpi/ghLib_DigitalInput.h"
 
 #ifdef NOROBOT
 namespace ghLib {

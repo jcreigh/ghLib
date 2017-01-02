@@ -7,9 +7,9 @@
 #ifndef GHLIB_WPI_H_
 #define GHLIB_WPI_H_
 
-#include "ghLib/wpi/AnalogInput.h"
-#include "ghLib/wpi/DigitalInput.h"
-#include "ghLib/wpi/Joystick.h"
-#include "ghLib/wpi/DriverStation.h"
+#include "ghLib/wpi/ghLib_AnalogInput.h"
+#include "ghLib/wpi/ghLib_DigitalInput.h"
+#include "ghLib/wpi/ghLib_Joystick.h"
+#include "ghLib/wpi/ghLib_DriverStation.h"
 
 #endif /* GHLIB_WPI_H */

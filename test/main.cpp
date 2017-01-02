@@ -10,6 +10,11 @@
 #include <gtest/gtest.h>
 #include "ghLib/Logger.h"
 
+#include "axis.cpp"
+#include "button.cpp"
+#include "runnable.cpp"
+#include "util.cpp"
+
 int main(int argc, char **argv) {
   std::this_thread::sleep_for(std::chrono::seconds(1));
 

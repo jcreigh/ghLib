@@ -3,37 +3,30 @@
 /* Open Source Software - May be modified and shared but must                 */
 /* be accompanied by the license file in the root source directory            */
 /*----------------------------------------------------------------------------*/
-#ifndef SRC_GHLIB_ANALOGINPUT_H_
-#define SRC_GHLIB_ANALOGINPUT_H_
+#ifndef SRC_GHLIB_DRIVERSTATION_H_
+#define SRC_GHLIB_DRIVERSTATION_H_
 
 #ifndef NOROBOT
 
-#include "WPILib.h"
+#include "DriverStation.h"
 namespace ghLib {
-typedef ::AnalogInput AnalogInput;
+typedef ::frc::DriverStation DriverStation;
 }
 
 #else
 
-#include <unordered_map>
+#include <string>
+#include <stdio.h>
 
 namespace ghLib {
 
-class AnalogInput {
-public:
-	AnalogInput(int channel);
-	int GetValue();
-	int GetAverageValue();
-	void SetValue(int newValue);
-
-private:
-	int channel;
-	static std::unordered_map<int, int> values;
-
+class DriverStation {
+	public:
+	static void ReportError(std::string error);
 };
 
 }
 
 #endif
 
-#endif /* SRC_GHLIB_ANALOGINPUT_H_ */
+#endif /* SRC_GHLIB_DRIVERSTATION_H_ */

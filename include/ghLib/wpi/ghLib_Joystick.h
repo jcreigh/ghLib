@@ -8,9 +8,9 @@
 
 #ifndef NOROBOT
 
-#include "WPILib.h"
+#include "Joystick.h"
 namespace ghLib {
-typedef ::Joystick Joystick;
+typedef ::frc::Joystick Joystick;
 }
 
 #else

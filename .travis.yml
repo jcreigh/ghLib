@@ -6,12 +6,11 @@ compiler:
 os:
     - linux
 
+env:
+    - TERM=dumb
+
 script:
-    - mkdir build
-    - cd build
-    - cmake .. -DROBOT=OFF
-    - make VERBOSE=1
-    - ./ghLib_test
+    - ./gradlew runGhLibDesktopTestGoogleTestExe
 
 before_install:
     - "if [ $(uname) = Linux ]; then sudo travis/setup-linux.sh; fi"
