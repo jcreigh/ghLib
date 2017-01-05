@@ -8,7 +8,7 @@ See the [github page](http://jcreigh.github.io/ghLib/) for installation instruct
 
 ## Prerequisites
 
-- CMake 2.8 or newer
+- java (for gradle)
 - Native Toolchain (To build locally)
 - ARM Toolchain (To crosscompile for use on the robot)
 - doxygen (optional, to build documentation)
@@ -18,30 +18,31 @@ The following dependencies are automatically downloaded and built when needed
 
 - [narflog](https://github.com/jcreigh/narflog)
 - [narflib](https://github.com/narfblock/narflib)
-- [ntcore](https://github.com/PeterJohnson/ntcore)
-- [wpilib](https://usfirst.collab.net/sf/projects/wpilib/)
-- [gtest](http://googletest.googlecode.com/)
+- [ntcore](https://github.com/wpilibsuite/ntcore)
+- [wpilib](https://github.com/wpilibsuite/allwpilib)
+- [gtest](https://github.com/google/googletest)
 
-## Building
+### Build Library for Robot
 ```bash
-mkdir build
-cd build
-cmake ..
+./gradlew ghLibStaticLibrary
 ```
 
-To build natively, use `cmake -DROBOT=OFF ..` instead
-
-### Library
+### Build Library for Desktop
 ```bash
-make
+./gradlew ghLibDesktopTestStaticLibrary
+```
+
+### Run Tests
+```bash
+./gradlew checkGhLibDesktopStaticLibrary
 ```
 
 ### Documentation
 ```bash
-make docs
+./gradlew doxygen
 ```
 
 ### Packaging
 ```bash
-cpack ..
+./gradlew ghLibZip
 ```

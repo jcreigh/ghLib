@@ -546,9 +546,9 @@ task ghLibZip(type: Zip) {
 }
 
 tasks.whenTaskAdded { task ->
-		if (task.name == 'ghLibStaticLibrary' || task.name == 'narflibArm' || task.name == 'narflogArm') {
-				ghLibZip.dependsOn task
-		}
+	if (task.name == 'ghLibStaticLibrary' || task.name == 'narflibArm' || task.name == 'narflogArm') {
+			ghLibZip.dependsOn task
+	}
 }
 
 task wrapper(type: Wrapper) {
