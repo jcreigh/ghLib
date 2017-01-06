@@ -100,6 +100,30 @@ Button::Button(int buttonChannel, ghLib::Joystick* stick, Mode mode /* = Button:
 }
 
 /**
+ * @brief Constructor for Button to load from a configuration structure
+ * @details
+ * Example:<br/>
+ * `ghLib::Button::Config c;` <br/>
+ * `c.config = "Button"; c.channel = 5; c.js = 2; c.deadband = 0.05f; c.invert = true;`<br/>
+ * `auto button = ghLib::Button(c);`<br/>
+ */
+Button::Button(Button::Config buttonConfig) {
+	LoadFromConfig(buttonConfig);
+}
+
+/**
+ * @brief Constructor for Button to load from a configuration lambda
+ * @details
+ * Example:<br/>
+ * `auto button = ghLib::Button([](auto& c) { c.config = "Button"; c.channel = 5; c.js = 2; c.invert = true;});`
+ */
+Button::Button(std::function<void(Button::Config&)> configLambda) {
+	Button::Config c;
+	configLambda(c);
+	LoadFromConfig(c);
+}
+
+/**
  * @brief Constructor for a Button to load from Preferences
  * @details
  *  Mode     | Description
@@ -134,6 +158,36 @@ Button::Button(int buttonChannel, ghLib::Joystick* stick, Mode mode /* = Button:
  * @param buttonConfig The configuration key for the button
  */
 Button::Button(std::string buttonConfig) {
+	LoadFromConfig(buttonConfig);
+}
+
+/**
+ * @brief Load Button configuration from Config struct
+ */
+void Button::LoadFromConfig(Button::Config buttonConfig) {
+	auto pref = NetworkTable::GetTable("Preferences");
+
+	config = buttonConfig.config;
+	auto table = pref->GetSubTable(config);
+
+	table->SetDefaultString("type", "button");
+	table->SetDefaultNumber("channel", buttonConfig.channel);
+	table->SetDefaultNumber("js", buttonConfig.js);
+	table->SetDefaultString("mode", buttonConfig.mode);
+	table->SetDefaultString("src", buttonConfig.src);
+	table->SetDefaultNumber("threshold", buttonConfig.threshold);
+	table->SetDefaultBoolean("average", buttonConfig.average);
+	table->SetDefaultNumber("pov", buttonConfig.pov);
+	table->SetDefaultString("virtual", buttonConfig.virtualSrc);
+
+	LoadFromConfig(config);
+}
+
+
+/**
+ * @brief Load Button configuration from Preferences
+ */
+void Button::LoadFromConfig(std::string buttonConfig) {
 	auto pref = NetworkTable::GetTable("Preferences");
 	auto logger = ghLib::Logger::getLogger("Button");
 	config = buttonConfig;

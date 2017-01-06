@@ -35,6 +35,28 @@ TEST(Button, ComplexConstructor) {
 	stick->SetRawButton(5, false);
 }
 
+TEST(Button, StructConstructor) {
+	ghLib::Button::Config c;
+	c.config = "Button/StructConstructor"; c.channel = 5; c.js = 2; c.mode = "raw"; c.src = "button";
+	auto button = ghLib::Button(c);
+	auto stick = ghLib::Joystick::GetStickForPort(2);
+	ghLib::ButtonRunner::SetEnabled(false);
+	ASSERT_FALSE(button.Get());
+	stick->SetRawButton(5, true); button.Update();
+	ASSERT_TRUE(button.Get());
+	stick->SetRawButton(5, false);
+}
+
+TEST(Button, StructLambdaConstructor) {
+	ghLib::Button::Config c;
+	auto button = ghLib::Button([](auto& c) { c.config = "Button/StructLambdaConstructor"; c.channel = 5; c.js = 2; c.mode = "raw"; c.src = "button";});
+	auto stick = ghLib::Joystick::GetStickForPort(2);
+	ghLib::ButtonRunner::SetEnabled(false);
+	ASSERT_FALSE(button.Get());
+	stick->SetRawButton(5, true); button.Update();
+	ASSERT_TRUE(button.Get());
+	stick->SetRawButton(5, false);
+}
 
 TEST(Button, RawButton) {
 	auto pref = NetworkTable::GetTable("Preferences");

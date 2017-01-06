@@ -21,6 +21,27 @@ TEST(Axis, ComplexConstructor) {
 	ASSERT_NEAR(0.0f, axis.Get(), 0.0001f);
 }
 
+TEST(Axis, StructConstructor) {
+	ghLib::Axis::Config c;
+	c.config = "Axis/StructConstructor"; c.channel = 5; c.js = 2; c.deadband = 0.05f; c.invert = true;
+	auto axis = ghLib::Axis(c);
+	auto stick = ghLib::Joystick::GetStickForPort(2);
+	stick->SetRawAxis(5, 0.5f);
+	ASSERT_NEAR(-0.47368419f, axis.Get(), 0.0001f);
+	stick->SetRawAxis(5, 0.01f);
+	ASSERT_NEAR(axis.Get(), 0.0f, 0.0001f);
+	ASSERT_NEAR(axis.GetDeadband(), 0.05f, 0.0001f);
+}
+
+TEST(Axis, StructLambdaConstructor) {
+	auto axis = ghLib::Axis([](auto& c) { c.config = "Axis/StructLambdaConstructor"; c.channel = 5; c.js = 2; c.deadband = 0.05f; c.invert = true;});
+	auto stick = ghLib::Joystick::GetStickForPort(2);
+	stick->SetRawAxis(5, 0.5f);
+	ASSERT_NEAR(-0.47368419f, axis.Get(), 0.0001f);
+	stick->SetRawAxis(5, 0.01f);
+	ASSERT_NEAR(axis.Get(), 0.0f, 0.0001f);
+	ASSERT_NEAR(axis.GetDeadband(), 0.05f, 0.0001f);
+}
 
 TEST(Axis, PrefConstructor) {
 	auto pref = NetworkTable::GetTable("Preferences");

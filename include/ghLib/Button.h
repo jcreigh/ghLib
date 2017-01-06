@@ -39,13 +39,28 @@ class ButtonRunner : public ghLib::Runnable {
 class Button {
 	friend class ButtonRunner;
 	public:
+		struct Config {
+			std::string config;
+			int channel = 1;
+			int js = 0;
+			std::string mode = "raw";
+			std::string src = "button";
+			int threshold = 0.95f;
+			bool average = false;
+			int pov = 0;
+			std::string virtualSrc = "";
+		};
 		std::string config;
 		enum Mode {
 			kRaw, kPress, kRelease, kToggle
 		};
 		Button(int buttonChannel, Mode mode = kRaw);
 		Button(int buttonChannel, ghLib::Joystick* stick, Mode mode = kRaw);
+		Button(Button::Config buttonConfig);
+		Button(std::function<void(Button::Config&)> configLambda);
 		Button(std::string buttonConfig);
+		void LoadFromConfig(Button::Config buttonConfig);
+		void LoadFromConfig(std::string buttonConfig);
 		~Button();
 		void Update();
 		void SetMode(Mode newMode);

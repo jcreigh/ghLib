@@ -8,6 +8,7 @@
 #define SRC_GHLIB_AXIS_H_
 
 #include <vector>
+#include <functional>
 #include "ghLib/WPI.h"
 #include "ghLib/Logger.h"
 #include "ghLib/Util.h"
@@ -18,11 +19,29 @@ namespace ghLib {
 
 class Axis {
 	public:
+		struct Range { float min, max; };
+		struct Config {
+			std::string config;
+			int channel = 0;
+			int js = 0;
+			std::string src = "axis";
+			float threshold = 0.95f;
+			std::string virtualSrc = "";
+			Range input = {0.0f, 0.0f};
+			Range output = {0.0f, 0.0f};
+			bool scale = false;
+			bool invert = false;
+			float deadband = 0.0f;
+		};
+
 		Axis(int axisChannel);
 		Axis(int axisChannel, ghLib::Joystick* stick);
+		Axis(Config axisConfig);
+		Axis(std::function<void(Axis::Config&)> configLambda);
 		Axis(std::string axisConfig);
 		~Axis();
-		struct Range { float min, max; };
+		void LoadFromConfig(Axis::Config axisConfig);
+		void LoadFromConfig(std::string axisConfig);
 		void SetDeadband(float newDeadband);
 		float GetDeadband() const;
 		void SetInvert(bool newInvert);

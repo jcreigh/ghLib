@@ -23,6 +23,30 @@ Axis::Axis(int axisChannel, ghLib::Joystick* stick) : axisChannel(axisChannel), 
 }
 
 /**
+ * @brief Constructor for Axis to load from a configuration structure
+ * @details
+ * Example:<br/>
+ * `ghLib::Axis::Config c;` <br/>
+ * `c.config = "Axis"; c.channel = 5; c.js = 2; c.deadband = 0.05f; c.invert = true;`<br/>
+ * `auto axis = ghLib::Axis(c);`<br/>
+ */
+Axis::Axis(Axis::Config axisConfig) {
+	LoadFromConfig(axisConfig);
+}
+
+/**
+ * @brief Constructor for Axis to load from a configuration lambda
+ * @details
+ * Example:<br/>
+ * `auto axis = ghLib::Axis([](auto& c) { c.config = "Axis"; c.channel = 5; c.js = 2; c.invert = true;});`
+ */
+Axis::Axis(std::function<void(Axis::Config&)> configLambda) {
+	Axis::Config c;
+	configLambda(c);
+	LoadFromConfig(c);
+}
+
+/**
  * @brief Constructor for a Axis to load from Preferences
  * @details
  *  Source   | Description
@@ -36,7 +60,7 @@ Axis::Axis(int axisChannel, ghLib::Joystick* stick) : axisChannel(axisChannel), 
  * `type`       | string |          | Must be 'axis'
  * `channel`    | int    | `0`      | Channel. Either axis number, or analog channel
  * `js`         | int    | `0`      | Joystick number
- * `src`        | string | `button` | axis, virtual, analog
+ * `src`        | string | `axis`   | axis, virtual, analog
  * `threshold`  | float  | `0.95`   | Threshold. If negative, value must be less than it
  * `average`    | bool   | `false`  | Use average analog input
  * `virtual`    | string |          | Name of other axis
@@ -50,6 +74,37 @@ Axis::Axis(int axisChannel, ghLib::Joystick* stick) : axisChannel(axisChannel), 
  * @param axisConfig The configuration key for the axis
  */
 Axis::Axis(std::string axisConfig) {
+	LoadFromConfig(axisConfig);
+}
+
+/**
+ * @brief Load Axis configuration from Config struct
+ */
+void Axis::LoadFromConfig(Axis::Config axisConfig) {
+	auto pref = NetworkTable::GetTable("Preferences");
+
+	config = axisConfig.config;
+	auto table = pref->GetSubTable(config);
+
+	table->SetDefaultString("type", "axis");
+	table->SetDefaultNumber("channel", axisConfig.channel);
+	table->SetDefaultNumber("js", axisConfig.js);
+	table->SetDefaultString("src", axisConfig.src);
+	table->SetDefaultNumber("threshold", axisConfig.threshold);
+	table->SetDefaultString("virtual", axisConfig.virtualSrc);
+	table->SetDefaultNumber("input.min", axisConfig.input.min);
+	table->SetDefaultNumber("input.max", axisConfig.input.max);
+	table->SetDefaultNumber("output.min", axisConfig.output.min);
+	table->SetDefaultNumber("output.max", axisConfig.output.max);
+	table->SetDefaultBoolean("scale", axisConfig.scale);
+	table->SetDefaultBoolean("invert", axisConfig.invert);
+	table->SetDefaultNumber("deadband", axisConfig.deadband);
+
+	LoadFromConfig(config);
+}
+
+
+void Axis::LoadFromConfig(std::string axisConfig) {
 	auto pref = NetworkTable::GetTable("Preferences");
 	auto logger = ghLib::Logger::getLogger("Axis");
 	config = axisConfig;
