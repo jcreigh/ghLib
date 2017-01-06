@@ -5,37 +5,24 @@
 /*----------------------------------------------------------------------------*/
 
 #include "ghLib/Util.h"
+#include "narf/format.h"
 #include <map>
 
 namespace ghLib {
 
-// From http://stackoverflow.com/a/8098080
 std::string Format(const std::string fmt_str, ...) {
-	int final_n, n = ((int)fmt_str.size()) * 2; /* Reserve two times as much as the length of the fmt_str */
-	std::string str;
-	std::unique_ptr<char[]> formatted;
-	va_list ap;
-	while(1) {
-		formatted.reset(new char[n]); /* Wrap the plain char array into the unique_ptr */
-		strcpy(&formatted[0], fmt_str.c_str());
-		va_start(ap, fmt_str);
-		final_n = vsnprintf(&formatted[0], n, fmt_str.c_str(), ap);
-		va_end(ap);
-		if (final_n < 0 || final_n >= n)
-			n += abs(final_n - n + 1);
-		else
-			break;
-	}
-	return std::string(formatted.get());
+	va_list argp;
+	va_start(argp, fmt_str);
+	auto ret = narf::util::format(fmt_str, argp);
+	va_end(argp);
+	return ret;
 }
 
 std::string FilterASCII(const std::string in) {
 	std::string out;
 	for (const char& c : in) {
-		//out += Format("%d,", (unsigned char)c);
 		if (c < ' ' || c >= 127) {
 			out += ".";
-			//out += Format("\\x%02x", (unsigned char)c);
 		} else {
 			out += c;
 		}
@@ -69,6 +56,7 @@ std::string EscapeString(const std::string in) {
 	}
 	return out;
 }
+
 std::vector<std::string>& Tokenize(const std::string &input, char delimeter, std::vector<std::string>& tokens, char escape /* = '\0' */) {
 	std::string buf = "";
 	bool escaping = false;
