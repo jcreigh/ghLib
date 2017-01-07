@@ -1,16 +1,21 @@
+sudo: required
+dist: trusty
 language: cpp
-
 compiler:
-    - gcc
+  - gcc
+install:
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 90
 
-os:
-    - linux
-
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.9
 env:
-    - TERM=dumb
-
+  - TERM=dumb
+os:
+  - linux
 script:
-    - ./gradlew runGhLibDesktopTestGoogleTestExe
-
-before_install:
-    - "if [ $(uname) = Linux ]; then sudo travis/setup-linux.sh; fi"
+  - $CXX --version
+  - ./gradlew runGhLibDesktopTestGoogleTestExe
