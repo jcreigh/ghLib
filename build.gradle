@@ -259,14 +259,23 @@ model {
 	components {
 		ghLib(NativeLibrarySpec) {
 			targetPlatform 'arm'
+			targetPlatform 'x64'
+
 			binaries.all { binary ->
-				tasks.withType(CppCompile) {
-					dependsOn unzipNetworkTables
-					dependsOn unzipHAL
-					dependsOn unzipAthena
-					dependsOn unzipWPIUtil
-					dependsOn narflogArmStaticLibrary
-					dependsOn narflibArmStaticLibrary
+				if (targetPlatform.architecture.name.contains("arm")) {
+					tasks.withType(CppCompile) {
+						dependsOn unzipNetworkTables
+						dependsOn unzipHAL
+						dependsOn unzipAthena
+						dependsOn unzipWPIUtil
+						dependsOn narflogArmStaticLibrary
+						dependsOn narflibArmStaticLibrary
+					}
+				} else if (targetPlatform.architecture.name.contains("x64")) {
+					tasks.withType(CppCompile) {
+						dependsOn unzipNetworkTables
+						dependsOn unzipWPIUtil
+					}
 				}
 			}
 			binaries.withType(SharedLibraryBinary) { binary ->
@@ -291,40 +300,16 @@ model {
 				}
 			}
 		}
-		ghLibDesktop(NativeLibrarySpec) {
-			targetPlatform 'x64'
-			binaries.all { binary ->
-				tasks.withType(CppCompile) {
-					dependsOn unzipNetworkTables
-					dependsOn unzipWPIUtil
-				}
-			}
-			binaries.withType(SharedLibraryBinary) { binary ->
-				buildable = false
-			}
-			sources {
-				cpp {
-					source {
-						srcDirs = ["src"]
-						includes = ['**/*.cpp']
-					}
-					exportedHeaders {
-						srcDirs = ["include",
-							netTablesInclude,
-							wpiutilInclude,
-							narflogInclude,
-							narflibInclude]
-						includes = ['**/*.h']
-					}
-				}
-			}
-		}
 
-		narflibArm(NativeLibrarySpec) {
+		narflib(NativeLibrarySpec) {
 			targetPlatform 'arm'
+			targetPlatform 'x64'
+
 			binaries.all { binary ->
-				tasks.withType(CppCompile) {
-					dependsOn unzipHAL
+				if (targetPlatform.architecture.name.contains("arm")) {
+					tasks.withType(CppCompile) {
+						dependsOn unzipHAL
+					}
 				}
 			}
 			sources {
@@ -341,46 +326,17 @@ model {
 			}
 		}
 
-		narflogArm(NativeLibrarySpec) {
+		narflog(NativeLibrarySpec) {
 			targetPlatform 'arm'
+			targetPlatform 'x64'
+
 			binaries.all { binary ->
-				tasks.withType(CppCompile) {
-					dependsOn unzipHAL
-				}
-			}
-			sources {
-				cpp {
-					source {
-						srcDirs = ["$narflog/src"]
-						includes = ['**/*.cpp']
-						excludes = ['test.cpp']
-					}
-					exportedHeaders {
-						srcDirs = [narflogInclude, narflibInclude]
-						includes = ['**/*.h']
+				if (targetPlatform.architecture.name.contains("arm")) {
+					tasks.withType(CppCompile) {
+						dependsOn unzipHAL
 					}
 				}
 			}
-		}
-
-		narflibDesktop(NativeLibrarySpec) {
-			targetPlatform 'x64'
-			sources {
-				cpp {
-					source {
-						srcDirs = ["$narflib"]
-						includes = ['tokenize.cpp', 'format.cpp', 'path.cpp', 'signal.cpp']
-					}
-					exportedHeaders {
-						srcDirs = [narflibInclude]
-						includes = ['**/*.h']
-					}
-				}
-			}
-		}
-
-		narflogDesktop(NativeLibrarySpec) {
-			targetPlatform 'x64'
 			sources {
 				cpp {
 					source {
@@ -412,12 +368,12 @@ model {
 			}
 		}
 
-		ghLibDesktopTest(NativeLibrarySpec) {
+		ghLibTest(NativeLibrarySpec) {
 			targetPlatform "x64"
 				binaries.all { binary ->
 					tasks.withType(CppCompile) {
 						dependsOn unzipNetworkTables
-						dependsOn ghLibDesktopStaticLibrary
+						dependsOn ghLibX64StaticLibrary
 					}
 				}
 			sources {
@@ -442,8 +398,8 @@ model {
 	}
 
 	testSuites {
-		ghLibDesktopTestSuite(GoogleTestTestSuiteSpec) {
-			testing $.components.ghLibDesktopTest
+		ghLibTestSuite(GoogleTestTestSuiteSpec) {
+			testing $.components.ghLibTest
 		}
 	}
 
@@ -451,16 +407,18 @@ model {
 		withType(GoogleTestTestSuiteBinarySpec) {
 			if (targetPlatform.architecture.name.contains("arm")) {
 				buildable  = false
+			} else if (!it.name.contains("ghLib")) {
+				buildable  = false
 			} else {
 
 				tasks.withType(CppCompile) {
-					dependsOn ghLibDesktopStaticLibrary
+					dependsOn ghLibX64StaticLibrary
 				}
 
-				lib library: "ghLibDesktopTest", linkage: "static"
-				lib library: "ghLibDesktop", linkage: "static"
-				lib library: "narflogDesktop", linkage: "static"
-				lib library: "narflibDesktop", linkage: "static"
+				lib library: "ghLibTest", linkage: "static"
+				lib library: "ghLib", linkage: "static"
+				lib library: "narflog", linkage: "static"
+				lib library: "narflib", linkage: "static"
 				lib library: "gtest", linkage: "static"
 
 				if (targetPlatform.operatingSystem.linux) {
@@ -506,23 +464,35 @@ if (checkDoxygen()) {
 
 }
 
+task ghLibCombine(type: Exec) {
+	description = 'Combine ghLib and its dependencies into a single static library'
+	group = 'ghLib'
+	workingDir = project.buildDir
+
+	// There's got to be a better way
+
+	def ByteArrayInputStream stdIn = new ByteArrayInputStream(
+			"""CREATE libghLibCombined.a
+			ADDLIB libs/narflib/static/arm/libnarflib.a
+			ADDLIB libs/narflog/static/arm/libnarflog.a
+			ADDLIB libs/ghLib/static/arm/libghLib.a
+			SAVE
+			END""".getBytes())
+
+	standardInput = stdIn
+	commandLine 'ar', '-M'
+}
+
+
 task ghLibZip(type: Zip) {
 	description = 'Zips all of the libraries for wpilibc'
 	group = 'ghLib'
 	baseName = "ghLib"
 	destinationDir = project.buildDir
+	dependsOn ghLibCombine
 
-	tasks.all { task ->
-		if (task.name == 'createGhLibStaticLibrary'
-			|| task.name == 'createNarflibArmStaticLibrary'
-			|| task.name == 'createNarflogArmStaticLibrary') {
-			from(task.outputs.files.getSingleFile()) {
-				into 'user/cpp/lib'
-				rename { fn ->
-					fn.replace("Arm", "")
-				}
-			}
-		}
+	from("$buildDir/libghLibCombined.a") {
+		into 'user/cpp/lib'
 	}
 
 	from('include') { into 'user/cpp/include' }
@@ -531,7 +501,9 @@ task ghLibZip(type: Zip) {
 		include "**/tokenize.h"
 		include "**/format.h"
 		include "**/signal.h"
+		include "**/path.h"
 	}
+
 	from("$buildDir/narflog/include") {
 		into 'user/cpp/include'
 		exclude "**/version.h.in"
@@ -546,11 +518,11 @@ task ghLibZip(type: Zip) {
 }
 
 tasks.whenTaskAdded { task ->
-	if (task.name == 'ghLibStaticLibrary' || task.name == 'narflibArm' || task.name == 'narflogArm') {
-			ghLibZip.dependsOn task
+	if (task.name == 'ghLibArmStaticLibrary') {
+		ghLibCombine.dependsOn task
 	}
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.2.1' //we want gradle 2.10 to run this project
+    gradleVersion = '3.2.1'
 }
