@@ -24,17 +24,17 @@ The following dependencies are automatically downloaded and built when needed
 
 ### Build Library for Robot
 ```bash
-./gradlew ghLibStaticLibrary
+./gradlew ghLibArmStaticLibrary
 ```
 
 ### Build Library for Desktop
 ```bash
-./gradlew ghLibDesktopTestStaticLibrary
+./gradlew ghLibX64StaticLibrary
 ```
 
 ### Run Tests
 ```bash
-./gradlew checkGhLibDesktopStaticLibrary
+./gradlew runGhLibTestTestGoogleTestExe
 ```
 
 ### Documentation

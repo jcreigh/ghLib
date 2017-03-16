@@ -18,4 +18,4 @@ os:
   - linux
 script:
   - $CXX --version
-  - ./gradlew runGhLibDesktopTestGoogleTestExe
+  - ./gradlew runGhLibTestTestGoogleTestExe
