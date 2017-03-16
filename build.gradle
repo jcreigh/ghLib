@@ -407,10 +407,7 @@ model {
 		withType(GoogleTestTestSuiteBinarySpec) {
 			if (targetPlatform.architecture.name.contains("arm")) {
 				buildable  = false
-			} else if (!it.name.contains("ghLib")) {
-				buildable  = false
 			} else {
-
 				tasks.withType(CppCompile) {
 					dependsOn ghLibX64StaticLibrary
 				}
