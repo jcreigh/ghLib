@@ -10,7 +10,8 @@ plugins {
 version gitVersion()
 
 if (!hasProperty('repo')) {
-	ext.repo = 'development'
+	//ext.repo = 'development'
+	ext.repo = 'release'
 }
 
 def repoBaseUrl = "http://first.wpi.edu/FRC/roborio/maven/${repo}"
@@ -48,7 +49,7 @@ if (!file("$buildDir/gtest").exists())  {
 ext.gtestDir = "$buildDir/gtest/googletest"
 
 def halDependency =
-		project.dependencies.create("edu.wpi.first.wpilib:hal:2017.1.1-rc-2-20170101034037-3-g182f572@zip")
+		project.dependencies.create("edu.wpi.first.wpilib:hal:2017.3.1@zip")
 def halConfig = project.configurations.detachedConfiguration(halDependency)
 halConfig.setTransitive(false)
 def hal = halConfig.files[0].canonicalFile
@@ -59,7 +60,7 @@ def halUnzipLocation = "$buildDir/hal"
 // Athena dependency
 
 def athenaDependency =
-		project.dependencies.create("edu.wpi.first.wpilibc:athena:2017.1.1-rc-2-20170101034037-3-g182f572@zip")
+		project.dependencies.create("edu.wpi.first.wpilibc:athena:2017.3.1@zip")
 def athenaConfig = project.configurations.detachedConfiguration(athenaDependency)
 athenaConfig.setTransitive(false)
 def athena = athenaConfig.files[0].canonicalFile
@@ -69,13 +70,13 @@ def athenaUnzipLocation = "$buildDir/athena"
 // wpiutil dependency
 
 def armWPIUtilDependency =
-		project.dependencies.create("edu.wpi.first.wpilib:wpiutil:1.0.2-20170101031849-1-gbac4b3d:arm@zip")
+		project.dependencies.create("edu.wpi.first.wpilib:wpiutil:1.0.2:arm@zip")
 def armWPIUtilConfig = project.configurations.detachedConfiguration(armWPIUtilDependency)
 armWPIUtilConfig.setTransitive(false)
 def armWPIUtil = armWPIUtilConfig.files[0].canonicalFile
 
 def desktopWPIUtilDependency =
-		project.dependencies.create("edu.wpi.first.wpilib:wpiutil:1.0.2-20170101031849-1-gbac4b3d:desktop@zip")
+		project.dependencies.create("edu.wpi.first.wpilib:wpiutil:1.0.2:desktop@zip")
 def desktopWPIUtilConfig = project.configurations.detachedConfiguration(desktopWPIUtilDependency)
 desktopWPIUtilConfig.setTransitive(false)
 def desktopWPIUtil = desktopWPIUtilConfig.files[0].canonicalFile
@@ -85,13 +86,13 @@ def wpiutilUnzipLocation = "$buildDir/wpiutil"
 // NetworkTables dependency
 
 def armNtDependency =
-		project.dependencies.create("edu.wpi.first.wpilib.networktables.cpp:NetworkTables:3.1.4-20170102034841-1-gbac4b3d:arm@zip")
+		project.dependencies.create("edu.wpi.first.wpilib.networktables.cpp:NetworkTables:3.1.7:arm@zip")
 def armConfig = project.configurations.detachedConfiguration(armNtDependency)
 armConfig.setTransitive(false)
 def armNetTables = armConfig.files[0].canonicalFile
 
 def desktopNtDependency =
-	project.dependencies.create("edu.wpi.first.wpilib.networktables.cpp:NetworkTables:3.1.4-20170102034841-1-gbac4b3d:desktop@zip")
+	project.dependencies.create("edu.wpi.first.wpilib.networktables.cpp:NetworkTables:3.1.7:desktop@zip")
 def desktopConfig = project.configurations.detachedConfiguration(desktopNtDependency)
 desktopConfig.setTransitive(false)
 def desktopNetTables = desktopConfig.files[0].canonicalFile
@@ -262,7 +263,7 @@ model {
 			targetPlatform 'x64'
 
 			binaries.all { binary ->
-				if (targetPlatform.architecture.name.contains("arm")) {
+				if (targetPlatform.name == "arm") {
 					tasks.withType(CppCompile) {
 						dependsOn unzipNetworkTables
 						dependsOn unzipHAL
@@ -271,7 +272,7 @@ model {
 						dependsOn narflogArmStaticLibrary
 						dependsOn narflibArmStaticLibrary
 					}
-				} else if (targetPlatform.architecture.name.contains("x64")) {
+				} else if (targetPlatform.name == "x64") {
 					tasks.withType(CppCompile) {
 						dependsOn unzipNetworkTables
 						dependsOn unzipWPIUtil
@@ -306,7 +307,7 @@ model {
 			targetPlatform 'x64'
 
 			binaries.all { binary ->
-				if (targetPlatform.architecture.name.contains("arm")) {
+				if (targetPlatform.name == "arm") {
 					tasks.withType(CppCompile) {
 						dependsOn unzipHAL
 					}
@@ -331,7 +332,7 @@ model {
 			targetPlatform 'x64'
 
 			binaries.all { binary ->
-				if (targetPlatform.architecture.name.contains("arm")) {
+				if (targetPlatform.name == "arm") {
 					tasks.withType(CppCompile) {
 						dependsOn unzipHAL
 					}
@@ -405,7 +406,7 @@ model {
 
 	binaries {
 		withType(GoogleTestTestSuiteBinarySpec) {
-			if (targetPlatform.architecture.name.contains("arm")) {
+			if (targetPlatform.name == "arm") {
 				buildable  = false
 			} else {
 				tasks.withType(CppCompile) {
